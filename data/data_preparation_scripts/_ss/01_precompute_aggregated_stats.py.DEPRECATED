@@ -1,0 +1,20 @@
+"""
+⚠️ DEPRECATED - This script has been merged into 06_precompute_derived_stats.py
+
+All aggregated statistics computation functions are now part of 06_.
+
+New workflow:
+1. Run 05_build_epw_index_and_extract.py --regional
+2. Run 06_precompute_derived_stats.py --compute-aggregates
+
+The --compute-aggregates flag in 06_ will automatically compute:
+- file_stats_by_percentile.parquet
+- location_stats_by_variant_percentile.parquet
+- location_deltas_by_variant_pair_percentile.parquet
+- monthly_delta_tables_by_variant_pair_percentile_metric.parquet
+
+See data_preparation_scripts/README.md for details.
+"""
+
+# Original code kept for reference but marked as deprecated
+# DO NOT USE - use 06_precompute_derived_stats.py --compute-aggregates instead

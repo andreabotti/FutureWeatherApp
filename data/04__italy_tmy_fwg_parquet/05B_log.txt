@@ -1,0 +1,789 @@
+[AB] SKIP fwg (unparsed): ITA_AB_Fucino.162270_TMYx.2007-2021.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Fucino.162270_TMYx.2009-2023.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Fucino.162270_TMYx.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Gran.Sasso.Mtn.Rng.162290_TMYx.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Pescara.Abruzzo.AP.162300_TMYx.2004-2018.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Pescara.Abruzzo.AP.162300_TMYx.2007-2021.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Pescara.Abruzzo.AP.162300_TMYx.2009-2023.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Pescara.Abruzzo.AP.162300_TMYx.epw
+[AB] SKIP fwg (unparsed): ITA_AB_Preturo.162280_TMYx.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp26__2050.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp26__2080.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp45__2050.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp45__2080.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp85__2050.epw
+[AB] SKIP fwg (unparsed): output__Ensemble__rcp85__2080.epw
+[AB] WROTE ITA_AB_Fucino.162270.parquet | cols=21 rows=8760
+[AB] WROTE ITA_AB_Gran.Sasso.Mtn.Rng.162290.parquet | cols=7 rows=8760
+[AB] WROTE ITA_AB_Pescara.Abruzzo.AP.162300.parquet | cols=28 rows=8760
+[AB] WROTE ITA_AB_Preturo.162280.parquet | cols=7 rows=8760
+[BC] SKIP fwg (unparsed): ITA_BC_Latronico.163160_TMYx.2004-2018.epw
+[BC] SKIP fwg (unparsed): ITA_BC_Latronico.163160_TMYx.2007-2021.epw
+[BC] SKIP fwg (unparsed): ITA_BC_Latronico.163160_TMYx.2009-2023.epw
+[BC] SKIP fwg (unparsed): ITA_BC_Latronico.163160_TMYx.epw
+[BC] SKIP fwg (unparsed): ITA_BC_Potenza.163000_TMYx.epw
+[BC] WROTE ITA_BC_Latronico.163160.parquet | cols=28 rows=8760
+[BC] WROTE ITA_BC_Potenza.163000.parquet | cols=7 rows=8760
+[CM] SKIP fwg (unparsed): ITA_CM_Cape.Palinuro.163100_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Cape.Palinuro.163100_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Cape.Palinuro.163100_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Cape.Palinuro.163100_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Capri.Island.162940_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Capri.Island.162940_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Capri.Island.162940_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Capri.Island.162940_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Caserta.162880_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Caserta.162880_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Caserta.162880_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Grazzanise.AB.162530_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Grazzanise.AB.162530_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Grazzanise.AB.162530_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Grazzanise.AB.162530_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Napoli-Capodichino.AP.162890_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Napoli-Capodichino.AP.162890_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Napoli-Capodichino.AP.162890_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Napoli-Capodichino.AP.162890_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Salerno-Pontecagnano.AP.162920_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Salerno-Pontecagnano.AP.162920_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Salerno-Pontecagnano.AP.162920_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Salerno-Pontecagnano.AP.162920_TMYx.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Trevico.162630_TMYx.2004-2018.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Trevico.162630_TMYx.2007-2021.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Trevico.162630_TMYx.2009-2023.epw
+[CM] SKIP fwg (unparsed): ITA_CM_Trevico.162630_TMYx.epw
+[CM] WROTE ITA_CM_Cape.Palinuro.163100.parquet | cols=28 rows=8760
+[CM] WROTE ITA_CM_Capri.Island.162940.parquet | cols=28 rows=8760
+[CM] WROTE ITA_CM_Caserta.162880.parquet | cols=21 rows=8760
+[CM] WROTE ITA_CM_Grazzanise.AB.162530.parquet | cols=28 rows=8760
+[CM] WROTE ITA_CM_Napoli-Capodichino.AP.162890.parquet | cols=28 rows=8760
+[CM] WROTE ITA_CM_Salerno-Pontecagnano.AP.162920.parquet | cols=28 rows=8760
+[CM] WROTE ITA_CM_Trevico.162630.parquet | cols=28 rows=8760
+[ER] SKIP fwg (unparsed): ITA_ER_Bologna-Marconi.AP.161400_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Bologna-Marconi.AP.161400_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Bologna-Marconi.AP.161400_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Bologna-Marconi.AP.161400_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cervia.AB.161480_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cervia.AB.161480_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cervia.AB.161480_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cervia.AB.161480_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cimone.Mtn.161340_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cimone.Mtn.161340_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cimone.Mtn.161340_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cimone.Mtn.161340_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cisa.Pass.161240_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cisa.Pass.161240_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cisa.Pass.161240_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Cisa.Pass.161240_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Ferrara.AP.161380_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Ferrara.AP.161380_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Ferrara.AP.161380_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Ferrara.AP.161380_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Forli.AP.161470_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Forli.AP.161470_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Forli.AP.161470_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Forli.AP.161470_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Modena.161280_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Parma-Verdi.AP.161300_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Parma-Verdi.AP.161300_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Parma-Verdi.AP.161300_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Parma-Verdi.AP.161300_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Piacenza-San.Damiano.AB.160840_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Piacenza-San.Damiano.AB.160840_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Piacenza-San.Damiano.AB.160840_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Piacenza-San.Damiano.AB.160840_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Punta.Marina.161460_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Punta.Marina.161460_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Punta.Marina.161460_TMYx.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Rimini-Fellini.AP.161490_TMYx.2004-2018.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Rimini-Fellini.AP.161490_TMYx.2007-2021.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Rimini-Fellini.AP.161490_TMYx.2009-2023.epw
+[ER] SKIP fwg (unparsed): ITA_ER_Rimini-Fellini.AP.161490_TMYx.epw
+[ER] WROTE ITA_ER_Bologna-Marconi.AP.161400.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Cervia.AB.161480.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Cimone.Mtn.161340.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Cisa.Pass.161240.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Ferrara.AP.161380.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Forli.AP.161470.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Modena.161280.parquet | cols=7 rows=8760
+[ER] WROTE ITA_ER_Parma-Verdi.AP.161300.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Piacenza-San.Damiano.AB.160840.parquet | cols=28 rows=8760
+[ER] WROTE ITA_ER_Punta.Marina.161460.parquet | cols=21 rows=8760
+[ER] WROTE ITA_ER_Rimini-Fellini.AP.161490.parquet | cols=28 rows=8760
+[FV] SKIP fwg (unparsed): ITA_FV_Aviano.AFB.160360_TMYx.2007-2021.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Aviano.AFB.160360_TMYx.2009-2023.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Aviano.AFB.160360_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Gorizia.160455_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Tarvisio.160400_TMYx.2004-2018.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Tarvisio.160400_TMYx.2007-2021.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Tarvisio.160400_TMYx.2009-2023.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Tarvisio.160400_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste-Friuli.Venezia.Guilia.AP.161080_TMYx.2004-2018.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste-Friuli.Venezia.Guilia.AP.161080_TMYx.2007-2021.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste-Friuli.Venezia.Guilia.AP.161080_TMYx.2009-2023.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste-Friuli.Venezia.Guilia.AP.161080_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste.161100_TMYx.2004-2018.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste.161100_TMYx.2007-2021.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste.161100_TMYx.2009-2023.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Trieste.161100_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Udine-Rivolto.AB.160450_TMYx.2007-2021.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Udine-Rivolto.AB.160450_TMYx.2009-2023.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Udine-Rivolto.AB.160450_TMYx.epw
+[FV] SKIP fwg (unparsed): ITA_FV_Udine.Campoformido.AF.160440_TMYx.epw
+[FV] WROTE ITA_FV_Aviano.AFB.160360.parquet | cols=21 rows=8760
+[FV] WROTE ITA_FV_Gorizia.160455.parquet | cols=7 rows=8760
+[FV] WROTE ITA_FV_Tarvisio.160400.parquet | cols=28 rows=8760
+[FV] WROTE ITA_FV_Trieste-Friuli.Venezia.Guilia.AP.161080.parquet | cols=28 rows=8760
+[FV] WROTE ITA_FV_Trieste.161100.parquet | cols=28 rows=8760
+[FV] WROTE ITA_FV_Udine-Rivolto.AB.160450.parquet | cols=21 rows=8760
+[FV] WROTE ITA_FV_Udine.Campoformido.AF.160440.parquet | cols=7 rows=8760
+[LB] SKIP fwg (unparsed): ITA_LB_Bonifati.163370_TMYx.2004-2018.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Bonifati.163370_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Bonifati.163370_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Bonifati.163370_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Cape.Spartivento.164690_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Cape.Spartivento.164690_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Cape.Spartivento.164690_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Catanzaro.163650_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Catanzaro.163650_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Catanzaro.163650_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Crotone-S-Anna.AP.163500_TMYx.2004-2018.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Crotone-S-Anna.AP.163500_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Crotone-S-Anna.AP.163500_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Crotone-S-Anna.AP.163500_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Lamezia.Terme.Intl.AP.163620_TMYx.2004-2018.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Lamezia.Terme.Intl.AP.163620_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Lamezia.Terme.Intl.AP.163620_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Lamezia.Terme.Intl.AP.163620_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Reggio.di.Calabria-Minniti.AP.164220_TMYx.2004-2018.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Reggio.di.Calabria-Minniti.AP.164220_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Reggio.di.Calabria-Minniti.AP.164220_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Reggio.di.Calabria-Minniti.AP.164220_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Scuro.Mtn.163440_TMYx.2004-2018.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Scuro.Mtn.163440_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Scuro.Mtn.163440_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Scuro.Mtn.163440_TMYx.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Serralta.di.S.Vito.163640_TMYx.2007-2021.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Serralta.di.S.Vito.163640_TMYx.2009-2023.epw
+[LB] SKIP fwg (unparsed): ITA_LB_Serralta.di.S.Vito.163640_TMYx.epw
+[LB] WROTE ITA_LB_Bonifati.163370.parquet | cols=28 rows=8760
+[LB] WROTE ITA_LB_Cape.Spartivento.164690.parquet | cols=21 rows=8760
+[LB] WROTE ITA_LB_Catanzaro.163650.parquet | cols=21 rows=8760
+[LB] WROTE ITA_LB_Crotone-S-Anna.AP.163500.parquet | cols=28 rows=8760
+[LB] WROTE ITA_LB_Lamezia.Terme.Intl.AP.163620.parquet | cols=28 rows=8760
+[LB] WROTE ITA_LB_Reggio.di.Calabria-Minniti.AP.164220.parquet | cols=28 rows=8760
+[LB] WROTE ITA_LB_Scuro.Mtn.163440.parquet | cols=28 rows=8760
+[LB] WROTE ITA_LB_Serralta.di.S.Vito.163640.parquet | cols=21 rows=8760
+[LG] SKIP fwg (unparsed): ITA_LG_Albenga-Riviera.AP.161220_TMYx.2004-2018.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Albenga-Riviera.AP.161220_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Albenga-Riviera.AP.161220_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Albenga-Riviera.AP.161220_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Cape.Mele.161530_TMYx.2004-2018.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Cape.Mele.161530_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Cape.Mele.161530_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Cape.Mele.161530_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Chiavari.161230_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Chiavari.161230_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Chiavari.161230_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.161210_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.161210_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.Colombo.AP.161200_TMYx.2004-2018.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.Colombo.AP.161200_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.Colombo.AP.161200_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Genoa.Colombo.AP.161200_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Giovi.Pass.161190_TMYx.2004-2018.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Giovi.Pass.161190_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Giovi.Pass.161190_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Giovi.Pass.161190_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Imperia.161500_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_La.Spezia-La.Castellana-Palmaria.Island.161290_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_La.Spezia-La.Castellana-Palmaria.Island.161290_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_La.Spezia-La.Castellana-Palmaria.Island.161290_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Sarzana-Luni.AB.161250_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Sarzana-Luni.AB.161250_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Sarzana-Luni.AB.161250_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Sarzana.Luni.AP.161270_TMYx.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Settepani.Mtn.161110_TMYx.2007-2021.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Settepani.Mtn.161110_TMYx.2009-2023.epw
+[LG] SKIP fwg (unparsed): ITA_LG_Settepani.Mtn.161110_TMYx.epw
+[LG] WROTE ITA_LG_Albenga-Riviera.AP.161220.parquet | cols=28 rows=8760
+[LG] WROTE ITA_LG_Cape.Mele.161530.parquet | cols=28 rows=8760
+[LG] WROTE ITA_LG_Chiavari.161230.parquet | cols=21 rows=8760
+[LG] WROTE ITA_LG_Genoa.161210.parquet | cols=14 rows=8760
+[LG] WROTE ITA_LG_Genoa.Colombo.AP.161200.parquet | cols=28 rows=8760
+[LG] WROTE ITA_LG_Giovi.Pass.161190.parquet | cols=28 rows=8760
+[LG] WROTE ITA_LG_Imperia.161500.parquet | cols=7 rows=8760
+[LG] WROTE ITA_LG_La.Spezia-La.Castellana-Palmaria.Island.161290.parquet | cols=21 rows=8760
+[LG] WROTE ITA_LG_Sarzana-Luni.AB.161250.parquet | cols=21 rows=8760
+[LG] WROTE ITA_LG_Sarzana.Luni.AP.161270.parquet | cols=7 rows=8760
+[LG] WROTE ITA_LG_Settepani.Mtn.161110.parquet | cols=21 rows=8760
+[LM] SKIP fwg (unparsed): ITA_LM_Bisbino.Mtn.160730_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Brescia-Montichiari.AP.162593_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Brescia-Montichiari.AP.162593_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Brescia-Montichiari.AP.162593_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Brescia-Montichiari.AP.162593_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Desenzano.del.Garda.160890_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Desenzano.del.Garda.160890_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Desenzano.del.Garda.160890_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Desenzano.del.Garda.160890_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Gallarate.160670_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Ghedi.AB.160880_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Ghedi.AB.160880_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Ghedi.AB.160880_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Ghedi.AB.160880_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Grigna.Settentrion.160700_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Bergamo.Intl.AP.160760_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Bergamo.Intl.AP.160760_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Bergamo.Intl.AP.160760_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Bergamo.Intl.AP.160760_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Linate.AP.160800_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Linate.AP.160800_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Linate.AP.160800_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Linate.AP.160800_TMYx.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Malpensa.AP.160660_TMYx.2004-2018.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Malpensa.AP.160660_TMYx.2007-2021.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Malpensa.AP.160660_TMYx.2009-2023.epw
+[LM] SKIP fwg (unparsed): ITA_LM_Milano-Malpensa.AP.160660_TMYx.epw
+[LM] WROTE ITA_LM_Bisbino.Mtn.160730.parquet | cols=7 rows=8760
+[LM] WROTE ITA_LM_Brescia-Montichiari.AP.162593.parquet | cols=28 rows=8760
+[LM] WROTE ITA_LM_Desenzano.del.Garda.160890.parquet | cols=28 rows=8760
+[LM] WROTE ITA_LM_Gallarate.160670.parquet | cols=7 rows=8760
+[LM] WROTE ITA_LM_Ghedi.AB.160880.parquet | cols=28 rows=8760
+[LM] WROTE ITA_LM_Grigna.Settentrion.160700.parquet | cols=7 rows=8760
+[LM] WROTE ITA_LM_Milano-Bergamo.Intl.AP.160760.parquet | cols=28 rows=8760
+[LM] WROTE ITA_LM_Milano-Linate.AP.160800.parquet | cols=28 rows=8760
+[LM] WROTE ITA_LM_Milano-Malpensa.AP.160660.parquet | cols=28 rows=8760
+[LZ] SKIP fwg (unparsed): ITA_LZ_Cape.Circeo.162490_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Cape.Circeo.162490_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Civitavecchia.162140_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Civitavecchia.162140_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Civitavecchia.162140_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Civitavecchia.162140_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Frosinone.AB.162440_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Frosinone.AB.162440_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Frosinone.AB.162440_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Frosinone.AB.162440_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Guidonia.AB.162340_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Guidonia.AB.162340_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Guidonia.AB.162340_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Guidonia.AB.162340_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Isola.di.Ponza.162800_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Isola.di.Ponza.162800_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Isola.di.Ponza.162800_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Isola.di.Ponza.162800_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Latina.AP.162430_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Latina.AP.162430_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Latina.AP.162430_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Latina.AP.162430_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Orte.162170_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Pratica.di.Mare.AB.162450_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Pratica.di.Mare.AB.162450_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Pratica.di.Mare.AB.162450_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Pratica.di.Mare.AB.162450_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rieti.AF.162210_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rieti.AF.162210_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rieti.AF.162210_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rieti.AF.162210_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma-Ciampino.AP.162390_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma-Ciampino.AP.162390_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma-Ciampino.AP.162390_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma-Ciampino.AP.162390_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma.Urbe.Rgnl.AP.162350_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma.Urbe.Rgnl.AP.162350_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma.Urbe.Rgnl.AP.162350_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Roma.Urbe.Rgnl.AP.162350_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome-Fiumicino-da.Vinci.AP.162420_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome-Fiumicino-da.Vinci.AP.162420_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome-Fiumicino-da.Vinci.AP.162420_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome-Fiumicino-da.Vinci.AP.162420_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome.162400_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Rome.Central.162380_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Terminillo.Mtn.162190_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Terminillo.Mtn.162190_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Terminillo.Mtn.162190_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Terminillo.Mtn.162190_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Vigna.di.Valle.162240_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Vigna.di.Valle.162240_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Vigna.di.Valle.162240_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Vigna.di.Valle.162240_TMYx.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Viterbo.AP.162160_TMYx.2004-2018.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Viterbo.AP.162160_TMYx.2007-2021.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Viterbo.AP.162160_TMYx.2009-2023.epw
+[LZ] SKIP fwg (unparsed): ITA_LZ_Viterbo.AP.162160_TMYx.epw
+[LZ] WROTE ITA_LZ_Cape.Circeo.162490.parquet | cols=14 rows=8760
+[LZ] WROTE ITA_LZ_Civitavecchia.162140.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Frosinone.AB.162440.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Guidonia.AB.162340.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Isola.di.Ponza.162800.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Latina.AP.162430.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Orte.162170.parquet | cols=7 rows=8760
+[LZ] WROTE ITA_LZ_Pratica.di.Mare.AB.162450.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Rieti.AF.162210.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Roma-Ciampino.AP.162390.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Roma.Urbe.Rgnl.AP.162350.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Rome-Fiumicino-da.Vinci.AP.162420.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Rome.162400.parquet | cols=7 rows=8760
+[LZ] WROTE ITA_LZ_Rome.Central.162380.parquet | cols=7 rows=8760
+[LZ] WROTE ITA_LZ_Terminillo.Mtn.162190.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Vigna.di.Valle.162240.parquet | cols=28 rows=8760
+[LZ] WROTE ITA_LZ_Viterbo.AP.162160.parquet | cols=28 rows=8760
+[MH] SKIP fwg (unparsed): ITA_MH_Ancona.161900_TMYx.2007-2021.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Ancona.161900_TMYx.2009-2023.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Ancona.161900_TMYx.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Frontone.161790_TMYx.2004-2018.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Frontone.161790_TMYx.2007-2021.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Frontone.161790_TMYx.2009-2023.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Frontone.161790_TMYx.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Grottammare.162250_TMYx.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Loreto.161920_TMYx.2007-2021.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Loreto.161920_TMYx.2009-2023.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Loreto.161920_TMYx.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Marche.AP.161910_TMYx.2004-2018.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Marche.AP.161910_TMYx.2007-2021.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Marche.AP.161910_TMYx.2009-2023.epw
+[MH] SKIP fwg (unparsed): ITA_MH_Marche.AP.161910_TMYx.epw
+[MH] WROTE ITA_MH_Ancona.161900.parquet | cols=21 rows=8760
+[MH] WROTE ITA_MH_Frontone.161790.parquet | cols=28 rows=8760
+[MH] WROTE ITA_MH_Grottammare.162250.parquet | cols=7 rows=8760
+[MH] WROTE ITA_MH_Loreto.161920.parquet | cols=21 rows=8760
+[MH] WROTE ITA_MH_Marche.AP.161910.parquet | cols=28 rows=8760
+[ML] SKIP fwg (unparsed): ITA_ML_Campobasso.162520_TMYx.2004-2018.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Campobasso.162520_TMYx.2007-2021.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Campobasso.162520_TMYx.2009-2023.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Campobasso.162520_TMYx.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Termoli.162320_TMYx.2004-2018.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Termoli.162320_TMYx.2007-2021.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Termoli.162320_TMYx.2009-2023.epw
+[ML] SKIP fwg (unparsed): ITA_ML_Termoli.162320_TMYx.epw
+[ML] WROTE ITA_ML_Campobasso.162520.parquet | cols=28 rows=8760
+[ML] WROTE ITA_ML_Termoli.162320.parquet | cols=28 rows=8760
+[PM] SKIP fwg (unparsed): ITA_PM_Bousson.160580_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Bousson.160580_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Bousson.160580_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Casale.Monferrato.160680_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Casale.Monferrato.160680_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Casale.Monferrato.160680_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Cuneo-Levaldigi.AP.161170_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Cuneo-Levaldigi.AP.161170_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Cuneo-Levaldigi.AP.161170_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Cuneo-Levaldigi.AP.161170_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Fraiteve.Mtn.161120_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Govone.161160_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Limone.Colle.di.Tenda.161150_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Limone.Colle.di.Tenda.161150_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Limone.Colle.di.Tenda.161150_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Limone.Colle.di.Tenda.161150_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Mondovi.161140_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Mondovi.161140_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Mondovi.161140_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Mondovi.161140_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Novi.Ligure.161180_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Bric.della.Croce.160610_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Bric.della.Croce.160610_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Bric.della.Croce.160610_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Bric.della.Croce.160610_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Caselle.AP.160590_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Caselle.AP.160590_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Caselle.AP.160590_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino-Caselle.AP.160590_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.AF.160595_TMYx.2004-2018.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.AF.160595_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.AF.160595_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.AF.160595_TMYx.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.Venaria.160600_TMYx.2007-2021.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.Venaria.160600_TMYx.2009-2023.epw
+[PM] SKIP fwg (unparsed): ITA_PM_Torino.Venaria.160600_TMYx.epw
+[PM] WROTE ITA_PM_Bousson.160580.parquet | cols=21 rows=8760
+[PM] WROTE ITA_PM_Casale.Monferrato.160680.parquet | cols=21 rows=8760
+[PM] WROTE ITA_PM_Cuneo-Levaldigi.AP.161170.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Fraiteve.Mtn.161120.parquet | cols=7 rows=8760
+[PM] WROTE ITA_PM_Govone.161160.parquet | cols=7 rows=8760
+[PM] WROTE ITA_PM_Limone.Colle.di.Tenda.161150.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Mondovi.161140.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Novi.Ligure.161180.parquet | cols=7 rows=8760
+[PM] WROTE ITA_PM_Torino-Bric.della.Croce.160610.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Torino-Caselle.AP.160590.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Torino.AF.160595.parquet | cols=28 rows=8760
+[PM] WROTE ITA_PM_Torino.Venaria.160600.parquet | cols=21 rows=8760
+[PU] SKIP fwg (unparsed): ITA_PU_Amendola.AP.162610_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Amendola.AP.162610_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Amendola.AP.162610_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Amendola.AP.162610_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari-Wojtyla.Intl.AP.162700_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari-Wojtyla.Intl.AP.162700_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari-Wojtyla.Intl.AP.162700_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari-Wojtyla.Intl.AP.162700_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari.162710_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari.162710_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari.162710_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Bari.162710_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Foggia.AP.162600_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Foggia.AP.162600_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Foggia.AP.162600_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Foggia.AP.162600_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ginosa.Marina.163250_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ginosa.Marina.163250_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ginosa.Marina.163250_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ginosa.Marina.163250_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Lecce-Galatina.AB.163320_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Lecce-Galatina.AB.163320_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Lecce-Galatina.AB.163320_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Lecce-Galatina.AB.163320_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Marina.di.Ginosa.162640_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Martina.Franca.163180_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Martina.Franca.163180_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Martina.Franca.163180_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Matera.163140_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Matera.163140_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Matera.163140_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Otranto.163340_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Otranto.163340_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Otranto.163340_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ramirez.AB.163120_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ramirez.AB.163120_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ramirez.AB.163120_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Ramirez.AB.163120_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_S.Angelo.Mtn.162580_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_S.Angelo.Mtn.162580_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_S.Angelo.Mtn.162580_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_S.Angelo.Mtn.162580_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Salento-Brindisi.AP.163200_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Salento-Brindisi.AP.163200_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Salento-Brindisi.AP.163200_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Salento-Brindisi.AP.163200_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Santa.Maria.di.Leuc.163600_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Santa.Maria.di.Leuc.163600_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Santa.Maria.di.Leuc.163600_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Santa.Maria.di.Leuc.163600_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Taranto-Grottaglie.AP.163240_TMYx.2004-2018.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Taranto-Grottaglie.AP.163240_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Taranto-Grottaglie.AP.163240_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Taranto-Grottaglie.AP.163240_TMYx.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Vieste.162660_TMYx.2007-2021.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Vieste.162660_TMYx.2009-2023.epw
+[PU] SKIP fwg (unparsed): ITA_PU_Vieste.162660_TMYx.epw
+[PU] WROTE ITA_PU_Amendola.AP.162610.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Bari-Wojtyla.Intl.AP.162700.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Bari.162710.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Foggia.AP.162600.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Ginosa.Marina.163250.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Lecce-Galatina.AB.163320.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Marina.di.Ginosa.162640.parquet | cols=7 rows=8760
+[PU] WROTE ITA_PU_Martina.Franca.163180.parquet | cols=21 rows=8760
+[PU] WROTE ITA_PU_Matera.163140.parquet | cols=21 rows=8760
+[PU] WROTE ITA_PU_Otranto.163340.parquet | cols=21 rows=8760
+[PU] WROTE ITA_PU_Ramirez.AB.163120.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_S.Angelo.Mtn.162580.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Salento-Brindisi.AP.163200.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Santa.Maria.di.Leuc.163600.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Taranto-Grottaglie.AP.163240.parquet | cols=28 rows=8760
+[PU] WROTE ITA_PU_Vieste.162660.parquet | cols=21 rows=8760
+[SC] SKIP fwg (unparsed): ITA_SC_Catania.Fontanarossa.AP.164600_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Catania.Fontanarossa.AP.164600_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Catania.Fontanarossa.AP.164600_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Catania.Fontanarossa.AP.164600_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Comiso.164750_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Comiso.164750_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Comiso.164750_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Cozzo.Spadaro.164800_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Cozzo.Spadaro.164800_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Cozzo.Spadaro.164800_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Cozzo.Spadaro.164800_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Enna.164500_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Enna.164500_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Enna.164500_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Enna.164500_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gela.164530_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gela.164530_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gela.164530_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gela.164530_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gibilmanna.164420_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gibilmanna.164420_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Gibilmanna.164420_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Salina.164150_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Salina.164150_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Salina.164150_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Stromboli.164160_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Stromboli.164160_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Isola.Stromboli.164160_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Lampedusa.AP.164900_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Lampedusa.AP.164900_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Lampedusa.AP.164900_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Lampedusa.AP.164900_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Messina.164200_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Messina.164200_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Messina.164200_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Messina.164200_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Mezzo.Gregorio.164650_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Mezzo.Gregorio.164650_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Mezzo.Gregorio.164650_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_NAS.Signoella.164590_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_NAS.Signoella.164590_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_NAS.Signoella.164590_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_NAS.Signoella.164590_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Boccadifalco.AP.164090_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Boccadifalco.AP.164090_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Boccadifalco.AP.164090_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Falcone.Borsellino.AP.164050_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Falcone.Borsellino.AP.164050_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Falcone.Borsellino.AP.164050_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Palermo-Falcone.Borsellino.AP.164050_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Pantelleria.AP.164700_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Pantelleria.AP.164700_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Pantelleria.AP.164700_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Pantelleria.AP.164700_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Prizzi.164340_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Prizzi.164340_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Prizzi.164340_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Prizzi.164340_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Sciacca.164360_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Sciacca.164360_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Sciacca.164360_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Siracusa.164640_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Siracusa.164640_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Siracusa.164640_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Trapani.Birgi.AP.164290_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Trapani.Birgi.AP.164290_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Trapani.Birgi.AP.164290_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Trapani.Birgi.AP.164290_TMYx.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Ustica.Island.164000_TMYx.2004-2018.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Ustica.Island.164000_TMYx.2007-2021.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Ustica.Island.164000_TMYx.2009-2023.epw
+[SC] SKIP fwg (unparsed): ITA_SC_Ustica.Island.164000_TMYx.epw
+[SC] WROTE ITA_SC_Catania.Fontanarossa.AP.164600.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Comiso.164750.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Cozzo.Spadaro.164800.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Enna.164500.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Gela.164530.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Gibilmanna.164420.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Isola.Salina.164150.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Isola.Stromboli.164160.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Lampedusa.AP.164900.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Messina.164200.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Mezzo.Gregorio.164650.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_NAS.Signoella.164590.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Palermo-Boccadifalco.AP.164090.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Palermo-Falcone.Borsellino.AP.164050.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Pantelleria.AP.164700.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Prizzi.164340.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Sciacca.164360.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Siracusa.164640.parquet | cols=21 rows=8760
+[SC] WROTE ITA_SC_Trapani.Birgi.AP.164290.parquet | cols=28 rows=8760
+[SC] WROTE ITA_SC_Ustica.Island.164000.parquet | cols=28 rows=8760
+[SD] SKIP fwg (unparsed): ITA_SD_Alghero-Fertilia.AB.165200_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Alghero-Fertilia.AB.165200_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Alghero-Fertilia.AB.165200_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Alghero-Fertilia.AB.165200_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cagliari.AP-Elmas.AB.165600_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cagliari.AP-Elmas.AB.165600_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cagliari.AP-Elmas.AB.165600_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cagliari.AP-Elmas.AB.165600_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Bellavista.165500_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Bellavista.165500_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Bellavista.165500_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Bellavista.165500_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Caccia.165220_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Caccia.165220_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Caccia.165220_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Caccia.165220_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Carbonara.165640_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Carbonara.165640_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Carbonara.165640_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Carbonara.165640_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Frasca.165390_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Frasca.165390_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Frasca.165390_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.Frasca.165390_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.S.Lorenzo.165420_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.S.Lorenzo.165420_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Cape.S.Lorenzo.165420_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Carloforte.165490_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Decimomannu.AB.165460_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Decimomannu.AB.165460_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Decimomannu.AB.165460_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Decimomannu.AB.165460_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Fonni.165380_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Guardiavecchia.165060_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Limbara.Mtn.165320_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Limbara.Mtn.165320_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Limbara.Mtn.165320_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Macomer.Sa-Crabarza.165240_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Olbia-Costa.Smeralda.AP.165310_TMYx.2004-2018.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Olbia-Costa.Smeralda.AP.165310_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Olbia-Costa.Smeralda.AP.165310_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Olbia-Costa.Smeralda.AP.165310_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Olsia.165300_TMYx.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Perdasdefogu.165410_TMYx.2007-2021.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Perdasdefogu.165410_TMYx.2009-2023.epw
+[SD] SKIP fwg (unparsed): ITA_SD_Perdasdefogu.165410_TMYx.epw
+[SD] WROTE ITA_SD_Alghero-Fertilia.AB.165200.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cagliari.AP-Elmas.AB.165600.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cape.Bellavista.165500.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cape.Caccia.165220.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cape.Carbonara.165640.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cape.Frasca.165390.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Cape.S.Lorenzo.165420.parquet | cols=21 rows=8760
+[SD] WROTE ITA_SD_Carloforte.165490.parquet | cols=7 rows=8760
+[SD] WROTE ITA_SD_Decimomannu.AB.165460.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Fonni.165380.parquet | cols=7 rows=8760
+[SD] WROTE ITA_SD_Guardiavecchia.165060.parquet | cols=7 rows=8760
+[SD] WROTE ITA_SD_Limbara.Mtn.165320.parquet | cols=21 rows=8760
+[SD] WROTE ITA_SD_Macomer.Sa-Crabarza.165240.parquet | cols=7 rows=8760
+[SD] WROTE ITA_SD_Olbia-Costa.Smeralda.AP.165310.parquet | cols=28 rows=8760
+[SD] WROTE ITA_SD_Olsia.165300.parquet | cols=7 rows=8760
+[SD] WROTE ITA_SD_Perdasdefogu.165410.parquet | cols=21 rows=8760
+[TC] SKIP fwg (unparsed): ITA_TC_Arezzo-Molin.Bianco.AP.161720_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Arezzo-Molin.Bianco.AP.161720_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Arezzo-Molin.Bianco.AP.161720_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Arezzo-Molin.Bianco.AP.161720_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Argentario.Mtn.161680_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Argentario.Mtn.161680_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Argentario.Mtn.161680_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Argentario.Mtn.161680_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Calamita.Mtn.161970_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Calamita.Mtn.161970_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Calamita.Mtn.161970_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Calamita.Mtn.161970_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze-Peretola.AP.161700_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze-Peretola.AP.161700_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze-Peretola.AP.161700_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze-Peretola.AP.161700_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze.161710_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze.161710_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Firenze.161710_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Grosseto.AP.162060_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Grosseto.AP.162060_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Grosseto.AP.162060_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Grosseto.AP.162060_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Isola.D-Elba.161980_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Isola.Gorgona.161540_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Pianosa.Island.162000_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Pisa-Galileo.Galilei.AP.161580_TMYx.2004-2018.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Pisa-Galileo.Galilei.AP.161580_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Pisa-Galileo.Galilei.AP.161580_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Pisa-Galileo.Galilei.AP.161580_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Porretta.Pass.161350_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Radicofani.162040_TMYx.2007-2021.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Radicofani.162040_TMYx.2009-2023.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Radicofani.162040_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Rifredo.Mugello.161420_TMYx.epw
+[TC] SKIP fwg (unparsed): ITA_TC_Volterra.161640_TMYx.epw
+[TC] WROTE ITA_TC_Arezzo-Molin.Bianco.AP.161720.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Argentario.Mtn.161680.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Calamita.Mtn.161970.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Firenze-Peretola.AP.161700.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Firenze.161710.parquet | cols=21 rows=8760
+[TC] WROTE ITA_TC_Grosseto.AP.162060.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Isola.D-Elba.161980.parquet | cols=7 rows=8760
+[TC] WROTE ITA_TC_Isola.Gorgona.161540.parquet | cols=7 rows=8760
+[TC] WROTE ITA_TC_Pianosa.Island.162000.parquet | cols=7 rows=8760
+[TC] WROTE ITA_TC_Pisa-Galileo.Galilei.AP.161580.parquet | cols=28 rows=8760
+[TC] WROTE ITA_TC_Porretta.Pass.161350.parquet | cols=7 rows=8760
+[TC] WROTE ITA_TC_Radicofani.162040.parquet | cols=21 rows=8760
+[TC] WROTE ITA_TC_Rifredo.Mugello.161420.parquet | cols=7 rows=8760
+[TC] WROTE ITA_TC_Volterra.161640.parquet | cols=7 rows=8760
+[TT] SKIP fwg (unparsed): ITA_TT_Bolzano.AP.160200_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Bolzano.AP.160200_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Bolzano.AP.160200_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Bolzano.AP.160200_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Brennero.Pass.111290_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Brennero.Pass.111290_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Brennero.Pass.111290_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Colle.Del.Gigante.160530_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Dobbiaco.160330_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Dobbiaco.160330_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Dobbiaco.160330_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Dobbiaco.160330_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Paganella.Mtn.160220_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Paganella.Mtn.160220_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Paganella.Mtn.160220_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Paganella.Mtn.160220_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Reschen.Pass.160083_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Reschen.Pass.160083_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Reschen.Pass.160083_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Reschen.Pass.160083_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Rolle.Pass.160210_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Rolle.Pass.160210_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Rolle.Pass.160210_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Rolle.Pass.160210_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_San.Valentino.Alla.Muta.160080_TMYx.2004-2018.epw
+[TT] SKIP fwg (unparsed): ITA_TT_San.Valentino.Alla.Muta.160080_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_San.Valentino.Alla.Muta.160080_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_San.Valentino.Alla.Muta.160080_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Trento.AP.160230_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Trento.AP.160230_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Trento.AP.160230_TMYx.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Vipiteno.160140_TMYx.2007-2021.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Vipiteno.160140_TMYx.2009-2023.epw
+[TT] SKIP fwg (unparsed): ITA_TT_Vipiteno.160140_TMYx.epw
+[TT] WROTE ITA_TT_Bolzano.AP.160200.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_Brennero.Pass.111290.parquet | cols=21 rows=8760
+[TT] WROTE ITA_TT_Colle.Del.Gigante.160530.parquet | cols=7 rows=8760
+[TT] WROTE ITA_TT_Dobbiaco.160330.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_Paganella.Mtn.160220.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_Reschen.Pass.160083.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_Rolle.Pass.160210.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_San.Valentino.Alla.Muta.160080.parquet | cols=28 rows=8760
+[TT] WROTE ITA_TT_Trento.AP.160230.parquet | cols=21 rows=8760
+[TT] WROTE ITA_TT_Vipiteno.160140.parquet | cols=21 rows=8760
+[UM] SKIP fwg (unparsed): ITA_UM_Umbria-Perugia-d-Assisi.AP.161810_TMYx.2004-2018.epw
+[UM] SKIP fwg (unparsed): ITA_UM_Umbria-Perugia-d-Assisi.AP.161810_TMYx.2007-2021.epw
+[UM] SKIP fwg (unparsed): ITA_UM_Umbria-Perugia-d-Assisi.AP.161810_TMYx.2009-2023.epw
+[UM] SKIP fwg (unparsed): ITA_UM_Umbria-Perugia-d-Assisi.AP.161810_TMYx.epw
+[UM] WROTE ITA_UM_Umbria-Perugia-d-Assisi.AP.161810.parquet | cols=28 rows=8760
+[VD] SKIP fwg (unparsed): ITA_VD_Aosta.AP.160540_TMYx.2007-2021.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Aosta.AP.160540_TMYx.2009-2023.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Aosta.AP.160540_TMYx.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Novara-Cameri.AB.160640_TMYx.2007-2021.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Novara-Cameri.AB.160640_TMYx.2009-2023.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Novara-Cameri.AB.160640_TMYx.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Pian.Rosa.Mtn.160520_TMYx.2004-2018.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Pian.Rosa.Mtn.160520_TMYx.2007-2021.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Pian.Rosa.Mtn.160520_TMYx.2009-2023.epw
+[VD] SKIP fwg (unparsed): ITA_VD_Pian.Rosa.Mtn.160520_TMYx.epw
+[VD] WROTE ITA_VD_Aosta.AP.160540.parquet | cols=21 rows=8760
+[VD] WROTE ITA_VD_Novara-Cameri.AB.160640.parquet | cols=21 rows=8760
+[VD] WROTE ITA_VD_Pian.Rosa.Mtn.160520.parquet | cols=28 rows=8760
+[VN] SKIP fwg (unparsed): ITA_VN_Concordia.Sagittaria.161070_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Concordia.Sagittaria.161070_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Concordia.Sagittaria.161070_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Grappa.Mtn.160920_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Istrana.AB.160980_TMYx.2004-2018.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Istrana.AB.160980_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Istrana.AB.160980_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Istrana.AB.160980_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Padova.AP.160950_TMYx.2004-2018.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Padova.AP.160950_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Padova.AP.160950_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Padova.AP.160950_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Treviso.AP.160990_TMYx.2004-2018.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Treviso.AP.160990_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Treviso.AP.160990_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Treviso.AP.160990_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Lido.AF.161010_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Lido.AF.161010_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Lido.AF.161010_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Polo.AP.161050_TMYx.2004-2018.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Polo.AP.161050_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Polo.AP.161050_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Venezia-Polo.AP.161050_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Verona.Catullo.AP.160900_TMYx.2004-2018.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Verona.Catullo.AP.160900_TMYx.2007-2021.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Verona.Catullo.AP.160900_TMYx.2009-2023.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Verona.Catullo.AP.160900_TMYx.epw
+[VN] SKIP fwg (unparsed): ITA_VN_Vicenza.AB.160940_TMYx.epw
+[VN] WROTE ITA_VN_Concordia.Sagittaria.161070.parquet | cols=21 rows=8760
+[VN] WROTE ITA_VN_Grappa.Mtn.160920.parquet | cols=7 rows=8760
+[VN] WROTE ITA_VN_Istrana.AB.160980.parquet | cols=28 rows=8760
+[VN] WROTE ITA_VN_Padova.AP.160950.parquet | cols=28 rows=8760
+[VN] WROTE ITA_VN_Treviso.AP.160990.parquet | cols=28 rows=8760
+[VN] WROTE ITA_VN_Venezia-Lido.AF.161010.parquet | cols=21 rows=8760
+[VN] WROTE ITA_VN_Venezia-Polo.AP.161050.parquet | cols=28 rows=8760
+[VN] WROTE ITA_VN_Verona.Catullo.AP.160900.parquet | cols=28 rows=8760
+[VN] WROTE ITA_VN_Vicenza.AB.160940.parquet | cols=7 rows=8760
+============================================================
+05B complete
+Stations written : 184
+Series ingested  : 4144
+Errors           : 0
+Output root      : D:\0D_OneDrive\OneDrive - EETRA srl SB\streamlit_apps\FWG\data\04__italy_tmy_fwg_parquet
+============================================================

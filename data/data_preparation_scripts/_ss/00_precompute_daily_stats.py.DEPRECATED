@@ -1,0 +1,14 @@
+"""
+⚠️ DEPRECATED - This script has been superseded by 06_precompute_derived_stats.py
+
+This old script worked with the legacy dbt_rh_tidy.parquet single-file format.
+
+The new workflow uses regional hourly files:
+1. Run 05_build_epw_index_and_extract.py --regional
+2. Run 06_precompute_derived_stats.py
+
+See data_preparation_scripts/README.md for details.
+"""
+
+# Original code kept for reference but marked as deprecated
+# DO NOT USE - use 06_precompute_derived_stats.py instead
