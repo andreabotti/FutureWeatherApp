@@ -2395,23 +2395,25 @@ def f207__d3_region_maps_html(
     }}
   }}
 
-  const topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
-  const countries = topojson.feature(topo, topo.objects.countries);
-  const italy = {{
-    type: "FeatureCollection",
-    features: countries.features.filter(d => +d.id === 380)
-  }};
-  const regionsUrl = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
+  let topo = null;
+  let italy = null;
   let regions = null;
-  try {{
-    regions = await d3.json(regionsUrl);
-  }} catch (e) {{
-    // ignore
-  }}
-  const provincesUrl = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_provinces.geojson";
   let provinces = null;
   try {{
-    provinces = await d3.json(provincesUrl);
+    topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+    if (topo && topo.objects && topo.objects.countries) {{
+      const countries = topojson.feature(topo, topo.objects.countries);
+      italy = {{
+        type: "FeatureCollection",
+        features: countries.features.filter(d => +d.id === 380)
+      }};
+    }}
+    regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson");
+  }} catch (e) {{
+    console.warn("D3 map: geo fetch failed (e.g. in iframe), markers will use point-only projection.", e);
+  }}
+  try {{
+    provinces = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_provinces.geojson");
   }} catch (e) {{
     // ignore
   }}
@@ -2455,8 +2457,8 @@ def f207__d3_region_maps_html(
   function renderMap(card, variant, dataByVariant, scale, clampMax) {{
     const allPoints = dataByVariant[variant] || [];
     let points = allPoints.filter(p => String(p.region) === String(currentRegion));
-    // CTI: if region filter leaves no points but we have data, show all CTI points so markers are visible
-    if (variant === "cti" && points.length === 0 && allPoints.length > 0) points = allPoints;
+    // If region filter leaves no points but we have data, show all points so markers are visible (helps when deployed in iframe e.g. Streamlit Cloud)
+    if (points.length === 0 && allPoints.length > 0) points = allPoints;
     const regionFeature = getRegionFeature();
     
     // Skip only if no points AND no region feature

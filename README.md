@@ -28,6 +28,12 @@ python data/data_preparation_scripts/05A_build_epw_index_and_extract.py --root d
 streamlit run app.py
 ```
 
+### Deploy on Streamlit (e.g. Community Cloud)
+
+1. Ensure **`requirements.txt`** is in the app root (it lists `streamlit`, `pandas`, `numpy`, `pyarrow`, `plotly`, `altair`, `Pillow`).
+2. In the Streamlit Cloud dashboard: **New app** → connect your repo, set **Main file path** to `app.py`, and **App root** to the folder that contains `app.py` and `requirements.txt`.
+3. The app expects data under `data/04__italy_tmy_fwg_parquet/` and optionally `data/04__italy_cti_parquet/`. For cloud deployment, either commit sample data, mount external storage, or run preparation scripts in a separate step and upload the generated `data/` (or use Streamlit’s secrets for data URLs if you host data elsewhere).
+
 ---
 
 ## 🧭 B Route Tables (Preferred)

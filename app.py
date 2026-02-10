@@ -424,8 +424,10 @@ def _discover_parquet_files(data_dir: Path) -> list[tuple[Path, str]]:
     if tables_dir.exists():
         for p in sorted(tables_dir.glob("*.parquet")):
             name = p.name
-            if name.startswith("D-TMYxFWG__DBT__F-DD__L-"):
+            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
                 files.append((p, f"{name} (daily stats)"))
+            elif name.startswith("D-CTI__DBT__F-MM__L-"):
+                files.append((p, f"{name} (monthly stats)"))
             elif "Inventory" in name:
                 files.append((p, f"{name} (inventory)"))
             else:
@@ -452,8 +454,10 @@ def _discover_parquet_files_by_region(data_dir: Path) -> list[tuple[str, list[tu
         by_region["Tables"] = []
         for p in sorted(tables_dir.glob("*.parquet")):
             name = p.name
-            if name.startswith("D-TMYxFWG__DBT__F-DD__L-"):
+            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
                 by_region["Tables"].append((p, f"{name} (daily stats)"))
+            elif name.startswith("D-CTI__DBT__F-MM__L-"):
+                by_region["Tables"].append((p, f"{name} (monthly stats)"))
             elif "Inventory" in name:
                 by_region["Tables"].append((p, f"{name} (inventory)"))
             else:
@@ -826,7 +830,7 @@ def _load_daily_stats_cached(daily_stats_path: Path, tidy_path: Path, idx: pd.Da
                                 f"**This means the data preparation script created the files but didn't populate them with data.**\n\n"
                                 f"**Solution:** Re-run the data preparation script:\n"
                                 f"```bash\n"
-                                f"python data/data_preparation_scripts/05_build_epw_index_and_extract.py \\\n"
+                                f"python data/data_preparation_scripts/05A_build_epw_index_and_extract.py \\\n"
                                 f"  --root data/01__italy_epw_all \\\n"
                                 f"  --root data/02__italy_fwg_outputs \\\n"
                                 f"  --out data/03__italy_all_epw_DBT_streamlit \\\n"
@@ -1102,10 +1106,10 @@ def _load_precomputed_monthly_delta_table(baseline_variant: str, compare_variant
             daily_stats, idx,
             baseline_variant=baseline_variant,
             compare_variant=compare_variant,
-            percentile=percentile,
+            percentile=float(percentile) / 100.0,
             metric_key=metric_key,
         ),
-        notes="Builds monthly delta table and max yearly column.",
+        notes="Builds monthly delta table (fallback when 06B precomputed file missing).",
     )
 
 
@@ -1446,18 +1450,23 @@ def _render_future_scenario_tab() -> None:
 
                         daily_stat = "max" if metric_key == "dTmax" else "mean"
                         loc_ids = tuple(str(x) for x in abs_df_d3["location_id"].astype(str).unique().tolist())
-                        profiles = _timed(
-                            "f22e__build_daily_profiles_single_variant_from_daily_stats",
-                            lambda: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
-                                daily_stats,
-                                idx,
-                                location_ids=loc_ids,
-                                variant=compare_variant,
-                                daily_stat=daily_stat,
-                                baseline_variant=baseline_variant_future,
-                            ),
-                            notes="Builds daily profiles from daily stats.",
+                        _tables_dir = DEFAULT_B_DATA_DIR / "_tables"
+                        profiles = h.load_daily_profiles_abs_precomputed(
+                            _tables_dir, compare_variant, daily_stat, loc_ids
                         )
+                        if not (profiles.get("profiles") and len(profiles["profiles"]) > 0):
+                            profiles = _timed(
+                                "f22e__build_daily_profiles_single_variant_from_daily_stats",
+                                lambda: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
+                                    daily_stats,
+                                    idx,
+                                    location_ids=loc_ids,
+                                    variant=compare_variant,
+                                    daily_stat=daily_stat,
+                                    baseline_variant=baseline_variant_future,
+                                ),
+                                notes="Builds daily profiles from daily stats.",
+                            )
                         html = _timed(
                             "f23b__d3_dashboard_html_abs",
                             lambda: h.f23b__d3_dashboard_html_abs(
@@ -1633,18 +1642,23 @@ def _render_future_scenario_tab() -> None:
 
                     daily_stat = "max" if metric_key == "dTmax" else "mean"
                     loc_ids = tuple(str(x) for x in abs_df["location_id"].astype(str).unique().tolist())
-                    profiles = _timed(
-                        "f22e__build_daily_profiles_single_variant_from_daily_stats",
-                        lambda: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
-                            daily_stats,
-                            idx,
-                            location_ids=loc_ids,
-                            variant=compare_variant,
-                            daily_stat=daily_stat,
-                            baseline_variant=baseline_variant,
-                        ),
-                        notes="Builds daily profiles from daily stats.",
+                    _tables_dir = DEFAULT_B_DATA_DIR / "_tables"
+                    profiles = h.load_daily_profiles_abs_precomputed(
+                        _tables_dir, compare_variant, daily_stat, loc_ids
                     )
+                    if not (profiles.get("profiles") and len(profiles["profiles"]) > 0):
+                        profiles = _timed(
+                            "f22e__build_daily_profiles_single_variant_from_daily_stats",
+                            lambda: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
+                                daily_stats,
+                                idx,
+                                location_ids=loc_ids,
+                                variant=compare_variant,
+                                daily_stat=daily_stat,
+                                baseline_variant=baseline_variant,
+                            ),
+                            notes="Builds daily profiles from daily stats.",
+                        )
                     html = _timed(
                         "f23b__d3_dashboard_html_abs",
                         lambda: h.f23b__d3_dashboard_html_abs(
@@ -1825,18 +1839,27 @@ def _render_future_delta_tab() -> None:
 
                 daily_stat = "max" if metric_key == "dTmax" else "mean"
                 loc_ids = tuple(str(x) for x in delta_df_d3["location_id"].astype(str).unique().tolist())
-                profiles = _timed(
-                    "f22d__build_daily_profiles_from_daily_stats",
-                    lambda: h.f22d__build_daily_db_profiles_from_daily_stats(
-                        daily_stats,
-                        idx,
-                        location_ids=loc_ids,
-                        baseline_variant=baseline_variant_future,
-                        compare_variant=compare_variant,
-                        daily_stat=daily_stat,
-                    ),
-                    notes="Builds daily profiles from daily stats.",
+                _tables_dir = DEFAULT_B_DATA_DIR / "_tables"
+                profiles = h.load_daily_profiles_delta_precomputed(
+                    _tables_dir,
+                    baseline_variant_future,
+                    compare_variant,
+                    daily_stat,
+                    loc_ids,
                 )
+                if not (profiles.get("profiles") and len(profiles["profiles"]) > 0):
+                    profiles = _timed(
+                        "f22d__build_daily_profiles_from_daily_stats",
+                        lambda: h.f22d__build_daily_db_profiles_from_daily_stats(
+                            daily_stats,
+                            idx,
+                            location_ids=loc_ids,
+                            baseline_variant=baseline_variant_future,
+                            compare_variant=compare_variant,
+                            daily_stat=daily_stat,
+                        ),
+                        notes="Builds daily profiles from daily stats.",
+                    )
                 html = _timed(
                     "f23__d3_dashboard_html",
                     lambda: h.f23__d3_dashboard_html(
@@ -2058,20 +2081,25 @@ with top_tabs[1]:
                 loc_ids = tuple(all_loc_ids)
                 if loc_ids:
                     daily_stat = "max" if metric_key == "dTmax" else "mean"
+                    _tables_dir = DEFAULT_B_DATA_DIR / "_tables"
                     for scenario in top_container_variants:
                         if scenario in all_scenarios:
-                            profiles = _timed(
-                                f"f22e__daily_profiles_from_daily_stats_{scenario}_v2",
-                                lambda s=scenario, i=idx, l=loc_ids, d=daily_stat, b=baseline_variant: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
-                                    daily_stats,
-                                    i,
-                                    location_ids=l,
-                                    variant=s,
-                                    daily_stat=d,
-                                    baseline_variant=b,
-                                ),
-                                notes=f"Builds daily profiles for {scenario}.",
+                            profiles = h.load_daily_profiles_abs_precomputed(
+                                _tables_dir, scenario, daily_stat, loc_ids
                             )
+                            if not (profiles.get("profiles") and len(profiles["profiles"]) > 0):
+                                profiles = _timed(
+                                    f"f22e__daily_profiles_from_daily_stats_{scenario}_v2",
+                                    lambda s=scenario, i=idx, l=loc_ids, d=daily_stat, b=baseline_variant: h.f22e__build_daily_db_profiles_single_variant_from_daily_stats(
+                                        daily_stats,
+                                        i,
+                                        location_ids=l,
+                                        variant=s,
+                                        daily_stat=d,
+                                        baseline_variant=b,
+                                    ),
+                                    notes=f"Builds daily profiles for {scenario}.",
+                                )
                             if profiles:
                                 profiles_bundle_by_variant[scenario] = profiles
 
@@ -2521,12 +2549,27 @@ with top_tabs[2]:
         st.markdown("##### Code Performance")
         timings = st.session_state.get("code_timing", {})
         perf_rows = [
-            {"function_name": "f115__load_all_data_with_progress", "description": "Load index + parquet, clean datetime, prepare base datasets."},
+            {"function_name": "load_b_inventory", "description": "Load station inventory from _tables."},
+            {"function_name": "load_b_daily_stats", "description": "Load daily stats parquet from _tables."},
+            {"function_name": "load_b_pairing_debug", "description": "Load pairing debug CSV."},
+            {"function_name": "load_file_stats_precomputed", "description": "Load precomputed file stats (06B)."},
+            {"function_name": "f123__build_file_stats_from_daily", "description": "Per-file Tmax percentile and Tavg mean (fallback if not precomputed)."},
+            {"function_name": "load_location_deltas_precomputed", "description": "Load precomputed location deltas (06B)."},
+            {"function_name": "f125__compute_location_deltas_from_daily", "description": "Per-location max monthly ΔT (fallback if not precomputed)."},
+            {"function_name": "load_location_stats_precomputed", "description": "Load precomputed location stats (06B)."},
+            {"function_name": "f28b__compute_location_stats_for_variant_from_daily", "description": "Per-location stats per variant (fallback if not precomputed)."},
+            {"function_name": "load_monthly_delta_table_precomputed", "description": "Load precomputed monthly delta table (06B)."},
+            {"function_name": "f124__build_monthly_delta_table", "description": "Monthly delta table and max yearly column (fallback if not precomputed)."},
             {"function_name": "f121__daily_stats_by_rel_path", "description": "Pre-aggregate hourly → daily mean/max per file."},
-            {"function_name": "f123__build_file_stats_from_daily", "description": "Per-file Tmax percentile and Tavg mean from daily stats."},
-            {"function_name": "f124__build_monthly_delta_table", "description": "Monthly delta table and max yearly column for table view."},
-            {"function_name": "f125__compute_location_deltas_from_daily", "description": "Per-location max monthly ΔT for map/table."},
             {"function_name": "f122__build_location_daily_join", "description": "Daily base/comp aligned series for per-location charts."},
+            {"function_name": "f28c__compute_location_stats_cti_from_daily", "description": "CTI location stats from daily."},
+            {"function_name": "f22e__build_daily_profiles_cti", "description": "CTI daily profiles for D3."},
+            {"function_name": "f22e__build_daily_profiles_single_variant_from_daily_stats", "description": "Daily profiles for one variant (D3 charts)."},
+            {"function_name": "f22d__build_daily_profiles_from_daily_stats", "description": "Daily profiles for delta D3."},
+            {"function_name": "f23b__d3_dashboard_html_abs", "description": "D3 absolute scenario dashboard HTML."},
+            {"function_name": "f23b__d3_dashboard_html_abs_cti", "description": "D3 CTI dashboard HTML."},
+            {"function_name": "f23__d3_dashboard_html", "description": "D3 delta dashboard HTML."},
+            {"function_name": "f19b__plotly_italy_map_abs", "description": "Plotly Italy map (absolute)."},
             {"function_name": "f34__plotly_tmyx_heatmap_subplots", "description": "TMYx heatmap subplot figure across variants."},
             {"function_name": "f35__plotly_tmyx_scatter_subplots", "description": "TMYx daily scatter subplot figure across variants."},
             {"function_name": "f36__plotly_tmyx_stacked_subplots", "description": "TMYx stacked columns subplot figure across variants."},
@@ -2539,9 +2582,10 @@ with top_tabs[2]:
         perf_df["last_timing_seconds"] = perf_df["last_timing_seconds"].apply(
             lambda x: round(x, 3) if x is not None and pd.notna(x) else None
         )
-        st.dataframe(perf_df, column_config={"last_timing_seconds": "last (s)"}, hide_index=True, use_container_width=True)
+        st.dataframe(perf_df, column_config={"last_timing_seconds": "last (s)"}, hide_index=True, width="stretch")
         if not timings:
             st.caption("No timings recorded yet. Interact with the app to populate timings.")
+        st.caption("**Speed up:** Run `06B_precompute_station_tables.py --parquet-root data/04__italy_tmy_fwg_parquet --overwrite` to precompute f124, f125, f28b and file stats; the app will then use the fast paths (load_*_precomputed) instead of computing on the fly.")
 
     with debug_tabs[1]:
         st.markdown("##### Data Preview")
@@ -2562,7 +2606,7 @@ with top_tabs[2]:
                                 continue
                             nrows, ncols = len(df_p), len(df_p.columns)
                             st.markdown(f"**{pa.name}** — {nrows:,} rows, {ncols} columns")
-                            st.dataframe(df_p.head(preview_n), use_container_width=True, hide_index=True)
+                            st.dataframe(df_p.head(preview_n), width="stretch", hide_index=True)
                         except Exception as e:
                             st.caption(f"**{pa.name}** — error: {e}")
 
@@ -2624,5 +2668,5 @@ with top_tabs[2]:
             {"Script": "06C_precompute_cti_tables.py", "Input": "CTI data", "Output": "CTI _tables", "Description": "Precompute CTI tables.", "Workflow": "5) Write parquet."},
         ]
         script_df = pd.DataFrame(script_rows)
-        st.dataframe(script_df, use_container_width=True, hide_index=True)
+        st.dataframe(script_df, width="stretch", hide_index=True)
         st.caption("Scripts in data/data_preparation_scripts/. Run in order per README. See repo README for full workflow.")

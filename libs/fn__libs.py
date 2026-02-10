@@ -2535,6 +2535,111 @@ def f22e__build_daily_db_profiles_single_variant_from_daily_stats(
     return {"keys": [[m, d] for (m, d) in keys], "profiles": profiles}
 
 
+def _daily_profile_keys_365() -> list:
+    """Standard 365 (month, day) keys for daily profile (base year 2001)."""
+    all_days = pd.date_range("2001-01-01", "2001-12-31", freq="D")
+    return [[int(d.month), int(d.day)] for d in all_days]
+
+
+def load_daily_profiles_abs_precomputed(
+    tables_dir: Path,
+    variant: str,
+    daily_stat: str,
+    location_ids: Tuple[str, ...],
+) -> Dict[str, Any]:
+    """
+    Load precomputed single-variant daily profiles (from 06D) and return
+    the same format as f22e__build_daily_db_profiles_single_variant_from_daily_stats.
+    """
+    safe = variant.replace("/", "_").replace("\\", "_").replace(":", "_")
+    path = tables_dir / f"D-TMYxFWG__DailyProfilesAbs__{safe}__{daily_stat}.parquet"
+    if not path.exists():
+        return {"keys": [], "profiles": {}}
+    try:
+        df = pd.read_parquet(path)
+    except Exception:
+        return {"keys": [], "profiles": {}}
+    if df.empty or "location_id" not in df.columns or "day_of_year" not in df.columns:
+        return {"keys": [], "profiles": {}}
+    locs = set(str(x) for x in location_ids)
+    df = df[df["location_id"].astype(str).isin(locs)].copy()
+    if df.empty:
+        return {"keys": [], "profiles": {}}
+    keys = _daily_profile_keys_365()
+    key_len = len(keys)
+    name_col = "location_name" if "location_name" in df.columns else None
+    profiles = {}
+    for loc in locs:
+        profiles[loc] = {"name": loc, "series": [None] * key_len}
+    for _, r in df.iterrows():
+        loc = str(r["location_id"])
+        if loc not in profiles:
+            continue
+        if name_col and name_col in r:
+            profiles[loc]["name"] = str(r[name_col])
+        doy = int(r["day_of_year"])
+        if 1 <= doy <= key_len:
+            val = r.get("DBT")
+            profiles[loc]["series"][doy - 1] = None if pd.isna(val) else round(float(val), 3)
+    return {"keys": keys, "profiles": profiles}
+
+
+def load_daily_profiles_delta_precomputed(
+    tables_dir: Path,
+    baseline_variant: str,
+    compare_variant: str,
+    daily_stat: str,
+    location_ids: Tuple[str, ...],
+) -> Dict[str, Any]:
+    """
+    Load precomputed delta daily profiles (from 06D) and return
+    the same format as f22d__build_daily_db_profiles_from_daily_stats.
+    """
+    def _safe(s: str) -> str:
+        return s.replace("/", "_").replace("\\", "_").replace(":", "_")
+    safe_b = _safe(baseline_variant)
+    safe_c_full = _safe(compare_variant)
+    # Prefer short name: baseline + suffix only when compare = baseline__suffix (e.g. tmyx_2009-2023__rcp45_2080 -> rcp45_2080)
+    path = None
+    if compare_variant.startswith(baseline_variant + "__"):
+        suffix = compare_variant[len(baseline_variant) + 2:]
+        path = tables_dir / f"D-TMYxFWG__DailyProfilesDelta__{safe_b}__{_safe(suffix)}__{daily_stat}.parquet"
+    if path is None or not path.exists():
+        path = tables_dir / f"D-TMYxFWG__DailyProfilesDelta__{safe_b}__{safe_c_full}__{daily_stat}.parquet"
+    if not path.exists():
+        return {"keys": [], "profiles": {}}
+    try:
+        df = pd.read_parquet(path)
+    except Exception:
+        return {"keys": [], "profiles": {}}
+    if df.empty or "location_id" not in df.columns or "role" not in df.columns:
+        return {"keys": [], "profiles": {}}
+    locs = set(str(x) for x in location_ids)
+    df = df[df["location_id"].astype(str).isin(locs)].copy()
+    if df.empty:
+        return {"keys": [], "profiles": {}}
+    keys = _daily_profile_keys_365()
+    key_len = len(keys)
+    name_col = "location_name" if "location_name" in df.columns else None
+    profiles = {}
+    for loc in locs:
+        profiles[loc] = {"name": loc, "base": [None] * key_len, "comp": [None] * key_len}
+    for _, r in df.iterrows():
+        loc = str(r["location_id"])
+        if loc not in profiles:
+            continue
+        if name_col and name_col in r:
+            profiles[loc]["name"] = str(r[name_col])
+        role = str(r.get("role", ""))
+        if role not in ("base", "comp"):
+            continue
+        doy = int(r["day_of_year"])
+        if 1 <= doy <= key_len:
+            val = r.get("DBT")
+            profiles[loc][role][doy - 1] = None if pd.isna(val) else round(float(val), 3)
+    return {"keys": keys, "profiles": profiles}
+
+
 # -----------------------------
 # Monthly metrics with threshold
 # -----------------------------
