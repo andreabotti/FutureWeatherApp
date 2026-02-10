@@ -538,6 +538,13 @@ AB, BC, CM, ER, FV, LB, LG, LM, LZ, MH, ML, PM, PU, SC, SD, TC, TT, UM, VD, VN
   - RCP8.5 (2030, 2050, 2080)
 - **CTI:** Comitato Termotecnico Italiano weather stations (110 locations)
 
+### Confronto Regione per Regione – map markers
+For **Confronto Regione per Regione** (Future Climate — Italian Regions), TMYx baseline markers need **station coordinates**. The app looks for **`D-TMY__epw_index.json`** in (first found wins):
+- **`data/04__italy_tmy_fwg_parquet/D-TMY__epw_index.json`**
+- **`data/03__italy_all_epw_DBT_streamlit/D-TMY__epw_index.json`**
+
+The inventory from `06B` does not store latitude/longitude, so without this file, baseline markers will not be plotted. You can place the JSON in `04__italy_tmy_fwg_parquet` or copy the full `03__italy_all_epw_DBT_streamlit` folder from your full dataset.
+
 ---
 
 ## 🤝 Contributing

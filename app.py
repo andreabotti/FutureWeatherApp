@@ -476,11 +476,12 @@ def _discover_parquet_files_by_region(data_dir: Path) -> list[tuple[str, list[tu
 # CTI (Itaca) weather stations (hourly DBT) - copy CSVs into this folder for Single Regions Data integration
 DEFAULT_CTI_DIR = SCRIPT_DIR / "data" / "cti"
 CTI_DBT_CSV = DEFAULT_CTI_DIR / "CTI__DBT__ITA_WeatherStations__All.csv"
-CTI_LIST_CSV = (
-    (DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv")
-    if (DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv").exists()
-    else (DEFAULT_CTI_DIR / "CTI__list__ITA_WeatherStations__All.csv")
+_cti_list_candidates = (
+    DEFAULT_CTI_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv",
+    DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv",
+    DEFAULT_CTI_DIR / "CTI__list__ITA_WeatherStations__All.csv",
 )
+CTI_LIST_CSV = next((p for p in _cti_list_candidates if p.exists()), _cti_list_candidates[-1])
 
 # -----------------------------
 # TMYx heatmap settings (edit here, not in UI)
@@ -552,8 +553,21 @@ pairing_debug = _timed(
     notes="Loads pairing debug table.",
 )
 
-epw_meta = _load_epw_index_meta(SCRIPT_DIR / "data" / "03__italy_all_epw_DBT_streamlit" / "D-TMY__epw_index.json")
+# EPW index: prefer 04__italy_tmy_fwg_parquet, then legacy 03__italy_all_epw_DBT_streamlit
+_epw_index_candidates = (
+    DEFAULT_B_DATA_DIR / "D-TMY__epw_index.json",
+    SCRIPT_DIR / "data" / "03__italy_all_epw_DBT_streamlit" / "D-TMY__epw_index.json",
+)
+_epw_index_path = next((p for p in _epw_index_candidates if p.exists()), _epw_index_candidates[-1])
+epw_meta = _load_epw_index_meta(_epw_index_path)
 idx = _build_idx_from_inventory(inventory, epw_meta)
+if not epw_meta and not idx.empty:
+    # Coordinates for map markers come from epw_meta; inventory from 06B has no lat/lon.
+    st.warning(
+        "**Map markers may be missing**: No EPW index found for station coordinates. "
+        f"Place `D-TMY__epw_index.json` in `data/04__italy_tmy_fwg_parquet/` or in `data/03__italy_all_epw_DBT_streamlit/`. "
+        f"Tried: {_epw_index_candidates[0]}, {_epw_index_candidates[1]}."
+    )
 station_region_map = (
     inventory.set_index("station_key")["region"].astype(str).to_dict()
     if "station_key" in inventory.columns and "region" in inventory.columns
@@ -1363,7 +1377,7 @@ def _render_cti_data_tab() -> None:
     if not CTI_LIST_CSV.exists():
         st.warning(
             "CTI list file not found. Place `CTI__list__ITA_WeatherStations__All.csv` in "
-            "`data/04__italy_tmy_fwg_parquet/` or `data/cti/`."
+            "`data/04__italy_cti_parquet/`, `data/04__italy_tmy_fwg_parquet/`, or `data/cti/`."
         )
         return
     try:
