@@ -3234,13 +3234,11 @@ def f207__d3_region_maps_html(
         }}
       }}
 
-      // Row 1: TMYx, RCP 4.5 Year 2050, RCP 8.5 Year 2080
-      // Only show RCP scenarios if they are in baselineVariants (to avoid repetition in bottom container)
+      // Row 1: TMYx baseline, RCP 4.5 Year 2050, RCP 8.5 Year 2080
+      // First map: exact "tmyx" or first non-RCP baseline (e.g. tmyx_2009-2023) so the baseline map always shows
       const row1 = container.append("div").attr("class", "maps-row maps-row-3");
-      
-      // TMYx (exact match "tmyx")
-      const tmyxVariant = baselineVariants.find(v => v === "tmyx");
-      if (tmyxVariant) {{
+      const tmyxVariant = baselineVariants.find(v => v === "tmyx") || baselineVariants.find(v => v !== "cti" && !v.includes("__rcp"));
+      if (tmyxVariant && combinedAbsByVar[tmyxVariant]) {{
         const card1 = row1.append("div").attr("class", "map-card");
         renderMap(card1, tmyxVariant, combinedAbsByVar, tempScale, 40);
       }}

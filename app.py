@@ -2046,7 +2046,12 @@ with top_tabs[1]:
                         abs_points_by_variant["cti"] = []
                         st.warning(f"CTI data found but could not be processed: {e}")
 
-                base_for_default = "tmyx" if "tmyx" in present_variants else present_variants[0]
+                # Use sidebar baseline so region maps match "Proiezioni Temperature Future" and "Temperature Correnti vs Future"
+                base_for_default = (
+                    baseline_variant_future
+                    if baseline_variant_future in present_variants
+                    else ("tmyx" if "tmyx" in present_variants else present_variants[0])
+                )
                 future_scenarios = [f"{base_for_default}__rcp45_2050", f"{base_for_default}__rcp85_2080"]
                 future_abs_points_by_variant = {}
                 for future_variant in future_scenarios:
