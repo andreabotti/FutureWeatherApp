@@ -5,71 +5,124 @@ import streamlit as st
 
 COPY = {
     "EN": {
-        "title": "Welcome to the App",
-        "tagline": "Explore future climate scenarios for building performance simulation.",
-        "getting_started_title": "How to use this app",
-        "step1": "Choose **Future Weather Scenarios** to compare current (TMYx) with projected climate (e.g. RCP 4.5 2050, RCP 8.5 2080).",
-        "step2": "Use **Current Weather Data (TMYx / CTI)** to inspect typical-year hourly data and charts by location.",
-        "step3": "Open **IPCC Scenarios** (under Future Weather Scenarios) for global temperature context and scenario definitions.",
-        "tmyx_title": "What is TMYx?",
+        "title": "Welcome",
+        "tagline": (
+            "Compare recent climate and future scenarios to understand how summer conditions and overheating risk "
+            "may change for buildings."
+        ),
+        "left_title": "Why this app",
+        "left_body": (
+            "In design practice we often rely on “reference” climate inputs used for checks and comparisons. "
+            "The issue is that the climate is changing: real summers are already hotter, and future projections suggest "
+            "further warming.\n\n"
+            "This app helps you compare recent and future climate conditions to support decisions on comfort, passive strategies, "
+            "and HVAC approach."
+        ),
+        "norms_title": "Standard data vs real-world climate",
+        "norms_body": (
+            "For compliance checks (Italy’s Minimum Requirements technical report), “official” climate data is required. "
+            "In Italy, this reference is provided by the UNI 10349 series. "
+            "It supports consistency and compliance, but it may not fully represent recent heatwaves and more extreme summer conditions."
+        ),
+        "interpret_title": "How to interpret",
+        "interpret_body": (
+            "**TMYx (baseline):** “today / recent”  \n"
+            "**TMYx → rcp45_2050:** same location, plausible 2050  \n"
+            "**TMYx → rcp85_2080:** more severe 2080"
+        ),
+        "tmyx_title": "What is TMYx",
         "tmyx_body": (
-            "**TMYx (Typical Meteorological Year Extended)** is a representative year of weather data "
-            "used as a baseline for building energy simulation. It is built from multiple years of observations "
-            "so it reflects typical conditions rather than a single extreme year."
+            "TMYx is a “typical” weather file: it does not represent a single year, but a representative year built from multiple years of data. "
+            "It is useful for energy simulations and consistent comparisons between locations."
         ),
         "ipcc_title": "IPCC scenarios (RCP / SSP)",
         "ipcc_body": (
-            "**RCP** (Representative Concentration Pathway) and **SSP** (Shared Socioeconomic Pathway) are "
-            "standardized greenhouse-gas pathways used by the IPCC. They are **scenarios**, not predictions: "
-            "they describe *if* society follows a certain path, *then* climate may respond in a certain way. "
-            "RCP 4.5 and RCP 8.5 are commonly used for building simulation (intermediate and high emissions)."
+            "RCP and SSP are scenario frameworks used by the IPCC to describe plausible emissions and climate pathways. "
+            "They are not exact forecasts: they are “what if” scenarios. "
+            "In this app we use them to explore how climate could change in the future (e.g., 2050, 2080) and test design resilience."
         ),
     },
     "IT": {
-        "title": "Benvenuto nell'app",
-        "tagline": "Esplora gli scenari climatici futuri per la simulazione delle prestazioni degli edifici.",
-        "getting_started_title": "Come usare questa app",
-        "step1": "Scegli **Scenari climatici futuri** per confrontare i dati attuali (TMYx) con il clima previsto (es. RCP 4.5 2050, RCP 8.5 2080).",
-        "step2": "Usa **Dati meteo attuali (TMYx / CTI)** per esaminare i dati orari dell'anno tipo e i grafici per località.",
-        "step3": "Apri **Scenari IPCC** (sotto Scenari climatici futuri) per il contesto sulle temperature globali e le definizioni degli scenari.",
-        "tmyx_title": "Cos'è il TMYx?",
+        # NOTE: requested removal of the IT title/tagline block.
+        "left_title": "Perché questa app",
+        "left_body": (
+            "Nella pratica progettuale usiamo spesso dati climatici di riferimento per verifiche e simulazioni. "
+            "Il problema è che il clima sta cambiando: le estati reali sono già più calde e le proiezioni future "
+            "indicano un ulteriore aumento.\n\n"
+            "Questa app permette di confrontare clima recente e clima futuro per supportare scelte progettuali "
+            "su comfort estivo, strategie passive e impostazione impiantistica."
+        ),
+        "norms_title": "Dati normativi e dati reali",
+        "norms_body": (
+            "Per le verifiche energetiche (Relazione tecnica dei Requisiti Minimi) servono dati climatici ufficiali. "
+            "In Italia questi dati sono forniti dalla serie UNI 10349. "
+            "Sono utili per la conformità normativa, ma possono non rappresentare pienamente le ondate di calore recenti "
+            "e le condizioni estive più estreme."
+        ),
+        "interpret_title": "Come interpretare",
+        "interpret_body": (
+            "**TMYx (baseline):** “oggi / recente”  \n"
+            "**TMYx → rcp45_2050:** stesso luogo, possibile futuro 2050  \n"
+            "**TMYx → rcp85_2080:** futuro più severo 2080"
+        ),
+        "tmyx_title": "Cos’è TMYx",
         "tmyx_body": (
-            "**TMYx (Typical Meteorological Year Extended)** è un anno rappresentativo di dati meteorologici "
-            "usato come baseline per la simulazione energetica degli edifici. È costruito da più anni di osservazioni "
-            "quindi riflette condizioni tipiche anziché un singolo anno estremo."
+            "TMYx è un file climatico tipico: non descrive un singolo anno, ma un anno rappresentativo "
+            "costruito a partire da più anni di dati. È utile per simulazioni energetiche coerenti."
         ),
         "ipcc_title": "Scenari IPCC (RCP / SSP)",
         "ipcc_body": (
-            "**RCP** (Representative Concentration Pathway) e **SSP** (Shared Socioeconomic Pathway) sono "
-            "percorsi standardizzati di gas serra usati dall'IPCC. Sono **scenari**, non previsioni: "
-            "descrivono *se* la società segue un certo percorso, *allora* il clima può rispondere in un certo modo. "
-            "RCP 4.5 e RCP 8.5 sono spesso usati per la simulazione degli edifici (emissioni intermedie e alte)."
+            "I Percorsi Rappresentativi di Concentrazione (Representative Concentration Pathways, RCP) sono scenari climatici "
+            "espressi in termini di concentrazioni di gas serra piuttosto che in termini di livelli di emissioni. "
+            "Il numero associato a ciascun RCP si riferisce al Forzante Radiativo (Radiative Forcing – RF), espresso in W/m², "
+            "e indica l’entità dei cambiamenti climatici antropogenici entro il 2100 rispetto al periodo preindustriale.\n\n"
+            "In pratica, ciascun RCP mostra una diversa quantità di calore addizionale immagazzinato nel sistema Terra "
+            "come risultato delle emissioni di gas serra.\n\n"
+            "**In questa app si considerano in particolare:**\n\n"
+            "- **RCP8.5** (\"Business-as-usual\" / nessuna mitigazione): crescita delle emissioni ai ritmi attuali. "
+            "Entro il 2100 le concentrazioni atmosferiche di CO₂ arrivano a circa 840–1120 ppm, cioè 3–4 volte i livelli "
+            "preindustriali (280 ppm).\n"
+            "- **RCP4.5** (\"Forte mitigazione\"): prevede l’attuazione di politiche di controllo delle emissioni. "
+            "È uno scenario di stabilizzazione: entro il 2070 le emissioni di CO₂ scendono al di sotto dei livelli attuali "
+            "e la concentrazione atmosferica si stabilizza, entro fine secolo, a circa il doppio dei livelli preindustriali."
         ),
     },
 }
 
 
 def render_welcome_page() -> None:
-    """Render the Welcome tab: title, tagline, 3 columns (getting started, TMYx, IPCC). Language from st.session_state['ui_lang']."""
+    """
+    Render the Welcome tab (bilingual).
+    Language from st.session_state['ui_lang'].
+    """
     lang = st.session_state.get("ui_lang", "EN")
     c = COPY.get(lang, COPY["EN"])
 
-    st.markdown(f"##### {c['title']}")
-    st.markdown(c["tagline"])
-    st.markdown("")
+    # Title/tagline are optional (removed for IT by request).
+    title = c.get("title")
+    tagline = c.get("tagline")
+    if title:
+        st.markdown(f"##### {title}")
+    if tagline:
+        st.markdown(tagline)
+    if title or tagline:
+        st.markdown("")
 
-    col1, col2, col3 = st.columns([3,2,2], gap="medium")
+    col1, col2 = st.columns([3, 2], gap="medium")
 
     with col1:
-        st.markdown(f"##### {c['getting_started_title']}")
-        st.markdown(f"1. {c['step1']}")
-        st.markdown(f"2. {c['step2']}")
-        st.markdown(f"3. {c['step3']}")
+        st.markdown(f"##### {c['left_title']}")
+        st.markdown(c["left_body"])
+        st.markdown("")
+        st.markdown(f"##### {c['norms_title']}")
+        st.markdown(c["norms_body"])
+        st.markdown("")
+        st.markdown(f"##### {c['interpret_title']}")
+        st.markdown(c["interpret_body"])
 
     with col2:
-        st.markdown(f"##### {c['tmyx_title']}")
-        st.markdown(c["tmyx_body"])
-
-    with col3:
-        st.markdown(f"##### {c['ipcc_title']}")
-        st.markdown(c["ipcc_body"])
+        tab_tmyx, tab_ipcc = st.tabs([c["tmyx_title"], c["ipcc_title"]])
+        with tab_tmyx:
+            st.markdown(c["tmyx_body"])
+        with tab_ipcc:
+            st.markdown(c["ipcc_body"])

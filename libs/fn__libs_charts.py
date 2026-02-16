@@ -1931,7 +1931,15 @@ def f206__d3_region_dashboard_html(
     }}
 
     if (regionPoints.length) {{
-      renderCharts(String(regionPoints[0].location_id));
+      let firstLocId = String(regionPoints[0].location_id);
+      if (hourlySeriesByLocationId && Object.keys(hourlySeriesByLocationId).length > 0) {{
+        const withHourly = regionPoints.find(p => hourlySeriesByLocationId[String(p.location_id)]);
+        if (withHourly) firstLocId = String(withHourly.location_id);
+        else if (initialSelectedLocationId && hourlySeriesByLocationId[String(initialSelectedLocationId)]) firstLocId = String(initialSelectedLocationId);
+      }} else if (initialSelectedLocationId && regionPoints.some(p => String(p.location_id) === String(initialSelectedLocationId))) {{
+        firstLocId = String(initialSelectedLocationId);
+      }}
+      renderCharts(firstLocId);
     }}
   }}
 
@@ -1963,7 +1971,60 @@ def f207__d3_region_maps_html(
     maps_row3_gap_px: int = 12,
     click_callback_key: str | None = None,
     profiles_bundle_by_variant: Dict[str, Dict[str, Any]] | None = None,
+    unitr_points: List[Dict[str, Any]] | None = None,
+    font_theme: Dict[str, Any] | None = None,
+    ui_lang: str = "EN",
+    style_reference: bool = False,
+    hourly_series_by_variant: Dict[str, List[Dict[str, Any]]] | None = None,
+    initial_selected_location_id: str | None = None,
+    hourly_series_by_location_id: Dict[str, Dict[str, List[Dict[str, Any]]]] | None = None,
+    thermo_separator_gap_px: int | None = None,
+    divider_margin_bottom_px: int | None = None,
 ) -> str:
+    # --- D3 dashboard: font/size and layout (change here for quick tuning) ---
+    _font_defaults = {
+        "enabled": False,
+        "font_family": '"Ronzino", "Arial Nova", "Helvetica Neue", Helvetica, Arial, sans-serif',
+        "fs_title": 18,
+        "fs_subtitle": 13,
+        "fs_label": 12,
+        "fs_small": 10,
+        "fs_axis": 11,
+    }
+    _thermo_separator_gap_px = 56 if thermo_separator_gap_px is None else thermo_separator_gap_px  # gap (px) between thermometer row and separator line
+    _divider_margin_bottom_px = 30 if divider_margin_bottom_px is None else divider_margin_bottom_px  # margin (px) below the horizontal divider
+    if not font_theme:
+        font_theme = _font_defaults.copy()
+    else:
+        font_theme = {**_font_defaults, **font_theme}
+    if font_theme.get("enabled"):
+        _font_family = font_theme.get("font_family", _font_defaults["font_family"])
+        _fs_title = int(font_theme.get("fs_title", 18))
+        _fs_subtitle = int(font_theme.get("fs_subtitle", 13))
+        _fs_label = int(font_theme.get("fs_label", 12))
+        _fs_small = int(font_theme.get("fs_small", 10))
+        _fs_axis = int(font_theme.get("fs_axis", 11))
+        _css_font_vars = (
+            "  :root {{\n"
+            "    --font: {ff};\n"
+            "    --fs-title: {t}px;\n"
+            "    --fs-subtitle: {s}px;\n"
+            "    --fs-label: {l}px;\n"
+            "    --fs-small: {sm}px;\n"
+            "    --fs-axis: {a}px;\n"
+            "  }}\n"
+        ).format(ff=_font_family, t=_fs_title, s=_fs_subtitle, l=_fs_label, sm=_fs_small, a=_fs_axis)
+    else:
+        _css_font_vars = (
+            "  :root {{\n"
+            "    --fs-title: 13px;\n"
+            "    --fs-subtitle: 11.7px;\n"
+            "    --fs-label: 12px;\n"
+            "    --fs-small: 10px;\n"
+            "    --fs-axis: 11px;\n"
+            "  }}\n"
+        )
+
     variants_json = json.dumps(baseline_variants, ensure_ascii=False)
     abs_json = json.dumps(abs_points_by_variant, ensure_ascii=False)
     delta_json = json.dumps(delta_points_by_variant, ensure_ascii=False)
@@ -1973,6 +2034,10 @@ def f207__d3_region_maps_html(
     force_region_str = json.dumps(force_region_code) if force_region_code else "null"
     callback_key_json = json.dumps(click_callback_key) if click_callback_key else "null"
     profiles_bundle_json = json.dumps(profiles_bundle_by_variant or dict(), ensure_ascii=False)
+    unitr_json = json.dumps(unitr_points or [], ensure_ascii=False)
+    hourly_series_json = json.dumps(hourly_series_by_variant or dict(), ensure_ascii=False)
+    hourly_series_by_location_id_json = json.dumps(hourly_series_by_location_id or dict(), ensure_ascii=False)
+    initial_selected_location_id_str = json.dumps(initial_selected_location_id) if initial_selected_location_id else "null"
     layout_mode_str = str(layout_mode or "default")
     cti_on_top_str = "true" if cti_on_top else "false"
     hide_row2_str = "true" if hide_row2 else "false"
@@ -1980,62 +2045,161 @@ def f207__d3_region_maps_html(
     dashboard_cols_str = str(dashboard_cols or "5fr 3fr 2fr")
     maps_row_gap_str = str(int(maps_row_gap_px))
     maps_row3_gap_str = str(int(maps_row3_gap_px))
+    thermo_separator_gap_str = str(int(_thermo_separator_gap_px))
+    divider_margin_bottom_str = str(int(_divider_margin_bottom_px))
+    scenarios_title_str = f"Current vs Future Climate Scenarios - Tmax ({percentile:.1f}th perc.)"
+    default_title_json = json.dumps(scenarios_title_str)
+    scatter_chart_title_str = (
+        "Temperature giornaliere"
+        if (str(ui_lang or "").upper() == "IT")
+        else "Daily temperature"
+    )
+    scatter_chart_title_hourly_str = (
+        "Temperature orarie"
+        if (str(ui_lang or "").upper() == "IT")
+        else "Hourly temperature"
+    )
+    _it = (str(ui_lang or "").upper() == "IT")
+    thermo_label_rcp45 = (
+        "TMYx - RCP45 - 2050<br/><span class=\"thermo-label-sub\">MEDIO TERMINE - EMISSIONI MEDIE</span>"
+        if _it else "TMYx - RCP45 - 2050<br/><span class=\"thermo-label-sub\">Medium term - Medium emissions</span>"
+    )
+    thermo_label_rcp85 = (
+        "TMYx - RCP85 - 2080<br/><span class=\"thermo-label-sub\">LUNGO TERMINE - EMISSIONI ALTE</span>"
+        if _it else "TMYx - RCP85 - 2080<br/><span class=\"thermo-label-sub\">Long term - High emissions</span>"
+    )
+    unitr_label_rcp45 = "TMYx - RCP45 - 2050" + ("<br/><span class=\"unitr-label-sub\">MEDIO TERMINE - EMISSIONI MEDIE</span>" if _it else "<br/><span class=\"unitr-label-sub\">Medium term - Medium emissions</span>")
+    unitr_label_rcp85 = "TMYx - RCP85 - 2080" + ("<br/><span class=\"unitr-label-sub\">LUNGO TERMINE - EMISSIONI ALTE</span>" if _it else "<br/><span class=\"unitr-label-sub\">Long term - High emissions</span>")
+    time_period_label = "Periodo" if _it else "Time Period"
+    time_period_options = (
+        [("entire_year", "Intero anno"), ("summer", "Estate"), ("winter", "Inverno"),
+        ("january", "Gennaio"), ("february", "Febbraio"), ("march", "Marzo"), ("april", "Aprile"),
+        ("may", "Maggio"), ("june", "Giugno"), ("july", "Luglio"), ("august", "Agosto"),
+        ("september", "Settembre"), ("october", "Ottobre"), ("november", "Novembre"), ("december", "Dicembre")]
+        if _it else
+        [("entire_year", "Entire Year"), ("summer", "Summer"), ("winter", "Winter"),
+        ("january", "January"), ("february", "February"), ("march", "March"), ("april", "April"),
+        ("may", "May"), ("june", "June"), ("july", "July"), ("august", "August"),
+        ("september", "September"), ("october", "October"), ("november", "November"), ("december", "December")]
+    )
+    time_period_options_html = "".join(f'<option value="{v}">{label}</option>' for v, label in time_period_options)
+    hourly_period_options = (
+        [("june", "Giugno"), ("july", "Luglio"), ("august", "Agosto")]
+        if _it else
+        [("june", "June"), ("july", "July"), ("august", "August")]
+    )
+    hourly_period_options_html = "".join(f'<option value="{v}">{label}</option>' for v, label in hourly_period_options)
+    if style_reference:
+        scenarios_title_str = "fs_subtitle"
+        scatter_chart_title_str = "fs_subtitle"
+        scatter_chart_title_hourly_str = "fs_subtitle"
+        time_period_label = "fs_label"
+        time_period_options_html = "".join(f'<option value="{v}">fs_label</option>' for v, _ in time_period_options)
+        hourly_period_options_html = "".join(f'<option value="{v}">fs_label</option>' for v, _ in hourly_period_options)
+        thermo_label_tmyx = "fs_subtitle"
+        thermo_label_rcp45 = 'fs_subtitle<br/><span class="thermo-label-sub">fs_label</span>'
+        thermo_label_rcp85 = 'fs_subtitle<br/><span class="thermo-label-sub">fs_label</span>'
+        unitr_label_tmyx = "fs_subtitle"
+        unitr_label_rcp45 = 'fs_subtitle<br/><span class="unitr-label-sub">fs_label</span>'
+        unitr_label_rcp85 = 'fs_subtitle<br/><span class="unitr-label-sub">fs_label</span>'
+        unitr_title_str = "fs_subtitle"
+        charts_location_placeholder = "fs_subtitle"
+        thermo_caption_placeholder = "fs_label"
+    else:
+        thermo_label_tmyx = "TMYx<br/><span class=\"thermo-label-sub\">CLIMA ATTUALE</span>" if _it else "TMYx<br/><span class=\"thermo-label-sub\">Current climate</span>"
+        unitr_label_tmyx = "TMYx<br/><span class=\"unitr-label-sub\">CLIMA ATTUALE</span>" if _it else "TMYx<br/><span class=\"unitr-label-sub\">Current climate</span>"
+        unitr_title_str = "Differenza di temperatura - Tmax - θmax"
+        charts_location_placeholder = "Click on a map marker above to view charts"
+        thermo_caption_placeholder = "Click on a map marker to view temperature"
+    style_reference_str = "true" if style_reference else "false"
+    region_label_str = "fs_label" if style_reference else "Region"
     if layout_mode_str == "columns":
-        layout_block = """
+        layout_block = f"""
 <div id="cti_top_container"></div>
 <div class="dashboard-grid">
   <div>
     <div class="maps-container" id="maps_container"></div>
-    <div style="margin-top: 0; border-top: 0px solid rgba(0,0,0,0.1); padding-top: 12px;">
-      <div id="charts_location_info" style="margin-bottom: 12px; font-size: 13px; color: rgba(0,0,0,0.7);">
-        Click on a map marker above to view charts
+    <div class="maps-scatter-divider" style="border-top: 1px solid rgba(0,0,0,0.12); margin: {thermo_separator_gap_str}px 0 {divider_margin_bottom_str}px 0;"></div>
+    <div style="margin-top: 0; padding-top: 0;">
+      <div id="charts_location_info" class="charts-location-info">
+        {charts_location_placeholder}
       </div>
-      <div style="margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div style="font-weight: 600; font-size: 12px;">Yearly Daily Temperature - All Scenarios</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <label for="time_period_select" style="font-size: 11px;">Time Period:</label>
-            <select id="time_period_select" style="font-size: 11px; padding: 4px 8px;">
-              <option value="entire_year">Entire Year</option>
-              <option value="summer">Summer</option>
-              <option value="winter">Winter</option>
-              <option value="january">January</option>
-              <option value="february">February</option>
-              <option value="march">March</option>
-              <option value="april">April</option>
-              <option value="may">May</option>
-              <option value="june">June</option>
-              <option value="july">July</option>
-              <option value="august">August</option>
-              <option value="september">September</option>
-              <option value="october">October</option>
-              <option value="november">November</option>
-              <option value="december">December</option>
-            </select>
-          </div>
+      <div class="scatter-subtabs" style="margin-bottom: 30px;">
+        <div class="scatter-subtab-buttons">
+          <button type="button" class="scatter-tab-btn active" data-scatter-tab="daily">{scatter_chart_title_str}</button>
+          <button type="button" class="scatter-tab-btn" data-scatter-tab="hourly">{scatter_chart_title_hourly_str}</button>
         </div>
-        <div id="scatter_combined"></div>
+        <div id="scatter_panel_daily" class="scatter-tab-panel active">
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 24px;">
+            <div class="scatter-chart-title scatter-chart-title-fs-subtitle">{scatter_chart_title_str}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="time_period_select" class="time-period-label">{time_period_label}:</label>
+              <select id="time_period_select" class="time-period-select">
+                {time_period_options_html}
+              </select>
+            </div>
+          </div>
+          <div id="scatter_combined"></div>
+        </div>
+        <div id="scatter_panel_hourly" class="scatter-tab-panel">
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 24px;">
+            <div class="scatter-chart-title scatter-chart-title-fs-subtitle">{scatter_chart_title_hourly_str}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="time_period_hourly_select" class="time-period-label">{time_period_label}:</label>
+              <select id="time_period_hourly_select" class="time-period-select">
+                {hourly_period_options_html}
+              </select>
+            </div>
+          </div>
+          <div id="scatter_hourly"></div>
+        </div>
       </div>
     </div>
   </div>
+  <div class="thermo-column-spacer"></div>
   <div>
     <div class="thermo-wrapper" id="thermo_column">
-      <div id="thermo_location_caption" class="thermo-location-caption">Click on a map marker to view temperature</div>
+      <div id="thermo_location_caption" class="thermo-location-caption">{thermo_caption_placeholder}</div>
       <div class="thermo-row">
         <div class="thermo-cell" id="thermo_cell_tmyx">
           <div id="thermo_container_tmyx" class="thermo-container"></div>
-          <div id="thermo_label_tmyx" class="thermo-scenario-label">TMYx</div>
+          <div id="thermo_label_tmyx" class="thermo-scenario-label">{thermo_label_tmyx}</div>
           <div id="thermo_value_tmyx" class="thermo-value"></div>
         </div>
         <div class="thermo-cell" id="thermo_cell_rcp45_2050">
           <div id="thermo_container_rcp45_2050" class="thermo-container"></div>
-          <div id="thermo_label_rcp45_2050" class="thermo-scenario-label">RCP 4.5 2050</div>
+          <div id="thermo_label_rcp45_2050" class="thermo-scenario-label">{thermo_label_rcp45}</div>
           <div id="thermo_value_rcp45_2050" class="thermo-value"></div>
         </div>
         <div class="thermo-cell" id="thermo_cell_rcp85_2080">
           <div id="thermo_container_rcp85_2080" class="thermo-container"></div>
-          <div id="thermo_label_rcp85_2080" class="thermo-scenario-label">RCP 8.5 2080</div>
+          <div id="thermo_label_rcp85_2080" class="thermo-scenario-label">{thermo_label_rcp85}</div>
           <div id="thermo_value_rcp85_2080" class="thermo-value"></div>
+        </div>
+      </div>
+      <div id="unitr_metrics" class="unitr-metrics">
+        <div class="unitr-title">{unitr_title_str}</div>
+        <div class="unitr-location-row" id="unitr_location_row"></div>
+        <div class="unitr-divider"></div>
+        <div class="unitr-row">
+          <div class="unitr-metric">
+            <div class="unitr-label">{unitr_label_tmyx}</div>
+            <div class="unitr-value" id="unitr_value_delta_tmyx"></div>
+          </div>
+          <div class="unitr-metric">
+            <div class="unitr-label">{unitr_label_rcp45}</div>
+            <div class="unitr-value" id="unitr_value_delta_rcp45"></div>
+          </div>
+          <div class="unitr-metric">
+            <div class="unitr-label">{unitr_label_rcp85}</div>
+            <div class="unitr-value" id="unitr_value_delta_rcp85"></div>
+          </div>
+        </div>
+        <div class="unitr-row-plain-label" id="unitr_hours_label">Ore &gt; θmax</div>
+        <div class="unitr-row-plain">
+          <div class="unitr-cell-plain" id="unitr_hours_tmyx"></div>
+          <div class="unitr-cell-plain" id="unitr_hours_rcp45"></div>
+          <div class="unitr-cell-plain" id="unitr_hours_rcp85"></div>
         </div>
       </div>
     </div>
@@ -2049,17 +2213,17 @@ def f207__d3_region_maps_html(
 <!-- Charts section below maps -->
 <div style="margin-top: 30px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 20px;">
   <div class="section-title" style="margin-bottom: 16px;">Charts</div>
-  <div id="charts_location_info" style="margin-bottom: 12px; font-size: 13px; color: rgba(0,0,0,0.7);">
+  <div id="charts_location_info" class="charts-location-info">
     Click on a map marker above to view charts
   </div>
   
   <!-- Combined scatter chart for all three scenarios -->
   <div style="margin-bottom: 30px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-      <div style="font-weight: 600; font-size: 12px;">Yearly Daily Temperature - All Scenarios</div>
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 24px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 24px;">
+      <div class="scatter-chart-title">Yearly Daily Temperature - All Scenarios</div>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <label for="time_period_select" style="font-size: 11px;">Time Period:</label>
-        <select id="time_period_select" style="font-size: 11px; padding: 4px 8px;">
+        <label for="time_period_select" class="time-period-label">Time Period:</label>
+        <select id="time_period_select" class="time-period-select">
           <option value="entire_year">Entire Year</option>
           <option value="summer">Summer</option>
           <option value="winter">Winter</option>
@@ -2101,9 +2265,10 @@ def f207__d3_region_maps_html(
         "  }\n"
         "  * { box-sizing: border-box; }\n"
         "  .controls { display: flex; gap: 8px; align-items: center; margin: 0 0 50px; }\n"
-        "  .controls label { font-size: 12px; color: var(--muted); }\n"
-        "  .controls select { font-size: 12px; padding: 4px 6px; }\n"
-        "  .section-title { font: 600 var(--fs) var(--font); color: var(--fg); margin: 0 0 6px; }\n"
+        "  .controls label {{ font-size: var(--fs-label); color: var(--muted); }}\n"
+        "  .controls select {{ font-size: var(--fs-label); padding: 4px 6px; }}\n"
+        "  .controls select option {{ font-size: var(--fs-label); font-family: inherit; }}\n"
+        "  .section-title {{ font: 600 var(--fs-title) var(--font); font-size: var(--fs-title); color: var(--fg); margin: 0 0 6px; }}\n"
         "  .maps-container { display: flex; justify-content: flex-start; flex-direction: column; gap: 10px; align-items: flex-start; width: 100%; max-width: 100%; }\n"
         "  .maps-row { display: flex; flex-direction: row; gap: "
     )
@@ -2133,21 +2298,31 @@ def f207__d3_region_maps_html(
     max-width: 100%;
   }}
   .map-title {{
-    font-size: 11.7px;
+    font-size: var(--fs-subtitle);
     color: var(--muted);
     margin: 0;
-    line-height: 1.15;
-    height: 16px; /* consistent baseline alignment */
+    line-height: 1.2;
+    min-height: 16px;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
     font-weight: 600;
     background: #fff;
     padding: 2px 4px;
     border-radius: 3px;
+    text-align: center;
+  }}
+  .map-title-line1 {{ display: block; }}
+  .map-title-line2 {{
+    display: block;
+    font-size: var(--fs-label);
+    font-weight: 500;
+    margin-top: 2px;
   }}
   .map-value-label {{
-    font-size: 9px;
+    font-size: var(--fs-label);
+    font-family: var(--font);
     fill: #111;
     paint-order: stroke;
     stroke: rgba(255,255,255,0.85);
@@ -2166,8 +2341,9 @@ def f207__d3_region_maps_html(
   }}
   .thermo-location-caption {{
     margin-bottom: 10px;
-    font-size: 13px;
-    color: rgba(0,0,0,0.75);
+    font-size: var(--fs-subtitle);
+    font-weight: 600;
+    color: rgba(0,0,0,0.85);
   }}
   .thermo-row {{
     display: grid;
@@ -2183,13 +2359,20 @@ def f207__d3_region_maps_html(
     gap: 6px;
   }}
   .thermo-scenario-label {{
-    font-size: 10px;
+    font-size: var(--fs-subtitle);
     color: var(--muted);
     font-weight: 600;
     text-align: center;
+    line-height: 1.2;
+  }}
+  .thermo-label-sub {{
+    font-size: var(--fs-label);
+    font-weight: 500;
+    display: block;
+    margin-top: 2px;
   }}
   .thermo-value {{
-    font-size: 12px;
+    font-size: var(--fs-subtitle);
     font-weight: 700;
     color: #222;
     text-align: center;
@@ -2197,6 +2380,10 @@ def f207__d3_region_maps_html(
   .thermo-container svg {{
     width: 100%;
     max-width: 160px;
+  }}
+  .thermo-column-spacer {{
+    width: 24px;
+    min-width: 24px;
   }}
   .dashboard-grid {{
     display: grid;
@@ -2224,7 +2411,7 @@ def f207__d3_region_maps_html(
     background: #fff;
     color: #222;
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: var(--fs-label);
     border-radius: 4px;
     cursor: pointer;
   }}
@@ -2239,20 +2426,151 @@ def f207__d3_region_maps_html(
   .tab-panel.active {{
     display: block;
   }}
+  .scatter-subtabs {{
+    width: 100%;
+  }}
+  .scatter-subtab-buttons {{
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+  }}
+  .scatter-tab-btn {{
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 18px;
+    font-size: var(--fs-subtitle);
+    font-family: var(--font);
+    color: rgba(0,0,0,0.65);
+    cursor: pointer;
+  }}
+  .scatter-tab-btn:hover {{
+    color: #222;
+  }}
+  .scatter-tab-btn.active {{
+    font-weight: 600;
+    color: #222;
+    border-bottom-color: #333;
+  }}
+  .scatter-tab-panel {{
+    display: none;
+  }}
+  .scatter-tab-panel.active {{
+    display: block;
+  }}
   .thermo-caption {{
     margin-top: 6px;
-    font-size: 13px;
+    font-size: var(--fs-subtitle);
     color: rgba(0,0,0,0.75);
   }}
+  .charts-location-info {{
+    margin-bottom: 12px;
+    font-size: var(--fs-subtitle);
+    color: rgba(0,0,0,0.7);
+  }}
+  .scatter-chart-title {{
+    font-weight: 600;
+    font-size: var(--fs-label);
+  }}
+  .scatter-chart-title-fs-subtitle {{
+    font-size: var(--fs-subtitle);
+  }}
+  .time-period-label {{
+    font-size: var(--fs-label);
+  }}
+  .time-period-select {{
+    font-size: var(--fs-label);
+    padding: 4px 8px;
+  }}
+  .time-period-select option {{
+    font-size: var(--fs-label);
+    font-family: inherit;
+  }}
+  .scenarios-subtitle {{
+    font-size: var(--fs-subtitle);
+  }}
+
+  .unitr-metrics {{
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    font-size: var(--fs-small);
+    color: rgba(0,0,0,0.8);
+  }}
+  .unitr-title {{
+    font-weight: 600;
+    font-size: var(--fs-subtitle);
+    margin-bottom: 6px;
+  }}
+  .unitr-location-row {{
+    font-size: var(--fs-label);
+    color: rgba(0,0,0,0.75);
+    margin-bottom: 8px;
+  }}
+  .unitr-divider {{
+    border-top: 1px solid rgba(0,0,0,0.12);
+    margin: 10px 0;
+  }}
+  .unitr-row {{
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }}
+  .unitr-metric {{
+    flex: 1;
+    min-width: 80px;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 6px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }}
+  .unitr-label {{
+    font-size: var(--fs-subtitle);
+    color: rgba(0,0,0,0.6);
+    margin-bottom: 4px;
+  }}
+  .unitr-label-sub {{
+    font-size: var(--fs-label);
+    display: block;
+    margin-top: 2px;
+  }}
+  .unitr-value {{
+    font-size: var(--fs-subtitle);
+    font-weight: 700;
+    color: #222;
+  }}
+  .unitr-row-plain {{
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }}
+  .unitr-row-plain-label {{
+    font-size: var(--fs-small);
+    color: rgba(0,0,0,0.55);
+    margin-top: 8px;
+    margin-bottom: 0;
+    width: 100%;
+  }}
+  .unitr-cell-plain {{
+    flex: 1;
+    min-width: 80px;
+    font-size: var(--fs-label);
+    color: #222;
+  }}
+{_css_font_vars}
 </style>
 
 <div class="controls" id="region_controls" style="display: {('none' if hide_region_selector else 'flex')};">
-  <label for="region_select" style="font-weight: 600;">Region</label>
+  <label for="region_select" style="font-weight: 600;">{region_label_str}</label>
   <select id="region_select"></select>
 </div>
 
-<div class="section-title" id="abs_title"></div>
-<div id="scenarios_subtitle" style="display: {('none' if hide_region_selector else 'block')}; margin: 8px 0 12px; font-weight: 600; font-size: 0.95rem;">Current vs Future Climate Scenarios</div>
+<div id="main_title" class="scenarios-subtitle" style="display: {('none' if hide_region_selector else 'block')}; margin: 8px 0 12px; font-weight: 600; font-size: var(--fs-subtitle);">{scenarios_title_str}</div>
 {layout_block}
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -2266,13 +2584,24 @@ def f207__d3_region_maps_html(
   const futureAbsByVar = {future_abs_json} || {{}};
   const regionOptions = {region_json} || [];
   const profilesByVariant = {profiles_bundle_json} || {{}};
+  const unitrPoints = {unitr_json} || [];
+  const hourlySeriesByVariant = {hourly_series_json} || {{}};
+  const hourlySeriesByLocationId = {hourly_series_by_location_id_json} || {{}};
+  const initialSelectedLocationId = {initial_selected_location_id_str};
+  function getHourlyForLocation(locId) {{
+    if (locId && hourlySeriesByLocationId[String(locId)]) return hourlySeriesByLocationId[String(locId)];
+    return hourlySeriesByVariant || {{}};
+  }}
   const metricKey = "{metric_key}";
   const compareVariant = "{compare_variant}";
   const forceRegionCode = {force_region_str};
   const ctiOnTop = {cti_on_top_str};
   const hideRow2 = {hide_row2_str};
   const PCT = {percentile};
-  
+  const uiLang = "{ui_lang}";
+  const defaultTitleStr = {default_title_json};
+  const styleReference = {style_reference_str};
+
   // Extract keys and profiles from bundles
   const variantKeys = {{}};
   const variantProfiles = {{}};
@@ -2281,13 +2610,6 @@ def f207__d3_region_maps_html(
       variantKeys[variant] = bundle.keys;
       variantProfiles[variant] = bundle.profiles;
     }}
-  }}
-
-  const absTitle = document.getElementById("abs_title");
-  if (absTitle) {{
-    absTitle.textContent = (metricKey === "dTmax")
-      ? `Tmax (${{PCT.toFixed(1)}}th perc.)`
-      : "Tavg (mean)";
   }}
 
   let currentRegion = null;
@@ -2303,7 +2625,8 @@ def f207__d3_region_maps_html(
     .style("background", "rgba(0, 0, 0, 0.85)")
     .style("color", "#fff")
     .style("border-radius", "4px")
-    .style("font-size", "11px")
+    .style("font-size", "var(--fs-axis)")
+    .style("font-family", "var(--font)")
     .style("pointer-events", "none")
     .style("opacity", 0)
     .style("z-index", 1000);
@@ -2328,7 +2651,7 @@ def f207__d3_region_maps_html(
       .data(regionOptions)
       .join("option")
         .attr("value", d => d.code)
-        .text(d => `${{d.name}} (${{d.code}})`);
+        .text(d => styleReference ? "fs_label" : `${{d.name}} (${{d.code}})`);
 
     const stored = safeGetStoredRegion();
     const storedValid = stored && regionOptions.find(r => r.code === stored);
@@ -2423,22 +2746,24 @@ def f207__d3_region_maps_html(
   let combinedAbsByVar = {{}};
 
   function variantLabel(v) {{
-    if (v.startsWith("tmyx_")) return "TMYx " + v.slice(5).replace("_", "-");
-    if (v.startsWith("tmyx")) return "TMYx";
-    // Format RCP scenarios: rcp45_2050 -> "RCP 4.5 Year 2050"
-    if (v.startsWith("rcp")) {{
-      const parts = v.split("_");
-      if (parts.length === 2) {{
-        const rcpPart = parts[0]; // e.g., "rcp45"
-        const rcpNum = rcpPart.replace("rcp", ""); // e.g., "45"
-        const year = parts[1];
-        if (rcpNum.length === 2) {{
-          return `RCP ${{rcpNum[0]}}.${{rcpNum[1]}} Year ${{year}}`;
-        }}
-        return `RCP ${{rcpNum}} Year ${{year}}`;
-      }}
-    }}
-    return v.toUpperCase();
+    if (styleReference) return "fs_subtitle";
+    const s = String(v || "");
+    if (s === "tmyx") return "TMYx";
+    if (s === "rcp45_2050" || s.endsWith("__rcp45_2050")) return "TMYx - RCP45 - 2050";
+    if (s === "rcp85_2080" || s.endsWith("__rcp85_2080")) return "TMYx - RCP85 - 2080";
+    if (s.startsWith("tmyx_")) return "TMYx " + s.slice(5).replace(/_/g, "-");
+    return v || "";
+  }}
+  function variantSubtitle(v) {{
+    if (styleReference) return "fs_label";
+    const s = String(v || "");
+    const isRcp45 = s === "rcp45_2050" || s.endsWith("__rcp45_2050");
+    const isRcp85 = s === "rcp85_2080" || s.endsWith("__rcp85_2080");
+    const isTmyx = s === "tmyx" || s.endsWith("__tmyx");
+    if (isRcp45) return uiLang === "IT" ? "MEDIO TERMINE - EMISSIONI MEDIE" : "Medium term - Medium emissions";
+    if (isRcp85) return uiLang === "IT" ? "LUNGO TERMINE - EMISSIONI ALTE" : "Long term - High emissions";
+    if (isTmyx) return uiLang === "IT" ? "CLIMA ATTUALE" : "Current climate";
+    return "";
   }}
 
   function getRegionFeature() {{
@@ -2466,7 +2791,10 @@ def f207__d3_region_maps_html(
       return;
     }}
 
-    card.append("div").attr("class", "map-title").text(variantLabel(variant));
+    const titleDiv = card.append("div").attr("class", "map-title");
+    titleDiv.append("span").attr("class", "map-title-line1").text(variantLabel(variant));
+    const sub = variantSubtitle(variant);
+    if (sub) titleDiv.append("span").attr("class", "map-title-line2").text(sub);
     // Use responsive sizing - base size but will scale with container
     const baseSize = 240;
     const mapW = baseSize, mapH = baseSize;
@@ -2746,7 +3074,9 @@ def f207__d3_region_maps_html(
             if (d.offsetY > 4) return "hanging";
             return "middle";
           }})
-          .style("opacity", 1.0) // Always full opacity - labels are moved, not faded
+          .style("opacity", 1.0)
+          .style("font-size", "var(--fs-label)")
+          .style("font-family", "var(--font)")
           .text(d => d.text);
     }}
   }}
@@ -2805,27 +3135,42 @@ def f207__d3_region_maps_html(
     const scatterSelector = "#scatter_combined";
     d3.select(scatterSelector).selectAll("*").remove();
     
-    // Scenarios to render: use baselineVariants that have profile data
+    // Scenarios to render: use baselineVariants that have profile data (same 3 colors as temperature orarie)
     const scenarioColors = {{
       "tmyx": "#1f77b4",
       "rcp45_2050": "#ff7f0e",
       "rcp85_2080": "#d62728",
-      "tmyx_2004-2018": "#2ca02c",
-      "tmyx_2007-2021": "#9467bd",
-      "tmyx_2009-2023": "#8c564b",
-      "tmyx_2004_2018": "#2ca02c",
-      "tmyx_2007_2021": "#9467bd",
-      "tmyx_2009_2023": "#8c564b"
+      "tmyx__rcp45_2050": "#ff7f0e",
+      "tmyx__rcp85_2080": "#d62728"
     }};
+    function variantColorDaily(v) {{
+      const s = String(v || "");
+      if (s === "rcp45_2050" || s.endsWith("__rcp45_2050")) return "#ff7f0e";
+      if (s === "rcp85_2080" || s.endsWith("__rcp85_2080")) return "#d62728";
+      return "#1f77b4";
+    }}
     function variantLabel(v) {{
-      if (v === "tmyx") return "TMY (Current)";
-      if (v === "rcp45_2050") return "RCP 4.5 2050";
-      if (v === "rcp85_2080") return "RCP 8.5 2080";
-      if (v && v.startsWith("tmyx_")) return "TMYx " + v.replace("tmyx_", "").replace(/_/g, "-");
+      if (styleReference) return "fs_subtitle";
+      const s = String(v || "");
+      if (s === "tmyx") return "TMYx";
+      if (s === "rcp45_2050" || s.endsWith("__rcp45_2050")) return "TMYx - RCP45 - 2050";
+      if (s === "rcp85_2080" || s.endsWith("__rcp85_2080")) return "TMYx - RCP85 - 2080";
+      if (s.startsWith("tmyx_")) return "TMYx " + s.replace("tmyx_", "").replace(/_/g, "-");
       return v || "";
     }}
+    function variantSubtitle(v) {{
+      if (styleReference) return "fs_label";
+      const s = String(v || "");
+      const isRcp45 = s === "rcp45_2050" || s.endsWith("__rcp45_2050");
+      const isRcp85 = s === "rcp85_2080" || s.endsWith("__rcp85_2080");
+      const isTmyx = s === "tmyx" || s.endsWith("__tmyx");
+      if (isRcp45) return uiLang === "IT" ? "MEDIO TERMINE - EMISSIONI MEDIE" : "Medium term - Medium emissions";
+      if (isRcp85) return uiLang === "IT" ? "LUNGO TERMINE - EMISSIONI ALTE" : "Long term - High emissions";
+      if (isTmyx) return uiLang === "IT" ? "CLIMA ATTUALE" : "Current climate";
+      return "";
+    }}
     function variantColor(v) {{
-      return scenarioColors[v] || "#17becf";
+      return variantColorDaily(v);
     }}
     let scenarios = baselineVariants.filter(v => variantKeys[v] && variantProfiles[v]);
     if (scenarios.length === 0 && Object.keys(variantProfiles).length > 0) {{
@@ -2863,7 +3208,8 @@ def f207__d3_region_maps_html(
       d3.select(scatterSelector).append("div")
         .style("padding", "20px")
         .style("color", "rgba(0,0,0,0.5)")
-        .style("font-size", "12px")
+        .style("font-size", "var(--fs-label)")
+        .style("font-family", "var(--font)")
         .text(msg);
       return;
     }}
@@ -2902,29 +3248,36 @@ def f207__d3_region_maps_html(
       .domain([yMin, yMax])
       .range([sh - sm.b, sm.t]);
     
+    // X-axis month labels: Jan, Feb... (EN) or Gen, Feb... (IT)
+    const monthAbbr = uiLang === "IT"
+      ? ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"]
+      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const xTickFormat = d => monthAbbr[d.getMonth()];
     // Axes
     ssvg.append("g")
       .attr("transform", `translate(0,${{sh - sm.b}})`)
-      .call(d3.axisBottom(x).ticks(d3.timeMonth.every(1)))
-      .call(g => g.selectAll("text").style("font-size", "10px"));
+      .call(d3.axisBottom(x).ticks(d3.timeMonth.every(1)).tickFormat(xTickFormat))
+      .call(g => g.selectAll("text").style("font-size", "var(--fs-axis)").style("font-family", "var(--font)"));
     
     ssvg.append("g")
       .attr("transform", `translate(${{sm.l}},0)`)
       .call(d3.axisLeft(y).ticks(8).tickFormat(d => `${{d}}°C`))
-      .call(g => g.selectAll("text").style("font-size", "10px"));
+      .call(g => g.selectAll("text").style("font-size", "var(--fs-axis)").style("font-family", "var(--font)"));
     
     // Labels
     ssvg.append("text")
       .attr("x", sw / 2)
       .attr("y", sh - 10)
       .attr("text-anchor", "middle")
-      .style("font-size", "11px")
+      .style("font-size", "var(--fs-axis)")
+      .style("font-family", "var(--font)")
       .text("Date");
     
     ssvg.append("text")
       .attr("x", 8)
       .attr("y", 15)
-      .style("font-size", "11px")
+      .style("font-size", "var(--fs-axis)")
+      .style("font-family", "var(--font)")
       .text("Temperature (°C)");
     
     // Draw lines for each scenario
@@ -2943,8 +3296,9 @@ def f207__d3_region_maps_html(
         .attr("d", line);
     }});
     
-    // Legend (50px left of previous position)
-    const legendX = sw - sm.r + 10 - 50;
+    // Legend in top-right with offset from right edge (px from top-right corner)
+    const legendOffsetFromRightPx = 24;
+    const legendX = sw - sm.r - 140 - legendOffsetFromRightPx;  // legend block ~140px wide, then offset
     const legendY = sm.t;
     const legendSpacing = 20;
     
@@ -2960,13 +3314,45 @@ def f207__d3_region_maps_html(
         .attr("stroke", item.color)
         .attr("stroke-width", 2);
       
-      // Legend text
+      // Legend text (fs_label)
       ssvg.append("text")
         .attr("x", legendX + 25)
         .attr("y", yPos + 4)
-        .style("font-size", "11px")
+        .style("font-size", "var(--fs-label)")
+        .style("font-family", "var(--font)")
         .text(item.label);
     }});
+
+    // θmax UNI/TR dashed line (horizontal, fine dots) in scatter chart
+    if (locId && metricKey === "dTmax" && unitrPoints && unitrPoints.length) {{
+      const coords = getLocationCoords(locId);
+      if (coords) {{
+        const nr = findNearestUnitr(coords.lat, coords.lon);
+        if (nr && nr.point) {{
+          const thetaMax = Number(nr.point.theta_max_C);
+          if (Number.isFinite(thetaMax) && thetaMax >= yMin && thetaMax <= yMax) {{
+            const thetaY = y(thetaMax);
+            ssvg.append("line")
+              .attr("x1", sm.l)
+              .attr("x2", sw - sm.r)
+              .attr("y1", thetaY)
+              .attr("y2", thetaY)
+              .attr("stroke", "#666")
+              .attr("stroke-width", 1)
+              .attr("stroke-dasharray", "1,2")
+              .style("opacity", 0.7);
+            ssvg.append("text")
+              .attr("x", sw - sm.r - 4)
+              .attr("y", thetaY + 14)
+              .attr("text-anchor", "end")
+              .style("font-size", "var(--fs-axis)")
+              .style("font-family", "var(--font)")
+              .style("fill", "#666")
+              .text("θmax = " + thetaMax.toFixed(1) + " °C");
+          }}
+        }}
+      }}
+    }}
   }}
   
   // Helper function to get monthly stat
@@ -2990,6 +3376,7 @@ def f207__d3_region_maps_html(
   let thermoVariants = {{ tmyx: "tmyx", rcp45_2050: "rcp45_2050", rcp85_2080: "rcp85_2080" }};
 
   function getLocationName(locId) {{
+    if (styleReference) return "fs_subtitle";
     let name = locId;
     for (const variant of baselineVariants) {{
       const profiles = variantProfiles[variant] || {{}};
@@ -3013,18 +3400,25 @@ def f207__d3_region_maps_html(
     }};
   }}
 
+  function thermoScenarioLabelHtml(v) {{
+    const main = variantLabel(v || "tmyx");
+    const sub = variantSubtitle(v || "tmyx");
+    if (sub) return main + "<br/><span class=\\"thermo-label-sub\\">" + sub + "</span>";
+    return main;
+  }}
+
   function renderThermometer(containerSelector, labelId, valueId, locId, variant) {{
     const container = d3.select(containerSelector);
     if (container.empty()) return;
     container.selectAll("*").remove();
     const labelEl = document.getElementById(labelId);
-    if (labelEl) labelEl.textContent = variantLabel(variant || "tmyx");
+    if (labelEl) labelEl.innerHTML = thermoScenarioLabelHtml(variant || "tmyx");
     const valueEl = document.getElementById(valueId);
-    if (valueEl) valueEl.textContent = "";
+    if (valueEl) valueEl.textContent = styleReference ? "fs_subtitle" : "";
     if (!locId) return;
     const vKey = variant || "tmyx";
     const {{ value, variantKey }} = getVariantValue(locId, vKey);
-    if (valueEl) valueEl.textContent = Number.isFinite(value) ? `${{value.toFixed(1)}} °C` : "";
+    if (valueEl) valueEl.textContent = styleReference ? "fs_subtitle" : (Number.isFinite(value) ? `${{value.toFixed(1)}} °C` : "");
     if (!Number.isFinite(value)) return;
     const maxTemp = 45;
     const v = Math.max(0, Math.min(maxTemp, value));
@@ -3113,10 +3507,12 @@ def f207__d3_region_maps_html(
       svg.append("text")
         .attr("x", tickX2 + 4)
         .attr("y", y + 3)
-        .style("font-size", "10px")
+        .style("font-size", "var(--fs-axis)")
+        .style("font-family", "var(--font)")
         .style("fill", "#444")
         .text(`${{t}}`);
     }});
+
   }}
 
   function updateThermoVariants() {{
@@ -3133,9 +3529,11 @@ def f207__d3_region_maps_html(
   function renderThermometers(locId) {{
     const locationCaption = document.getElementById("thermo_location_caption");
     if (locationCaption) {{
-      if (locId) {{
+      if (styleReference) {{
+        locationCaption.textContent = "fs_label";
+      }} else if (locId) {{
         const locName = getLocationName(locId);
-        locationCaption.innerHTML = `Location: <b>${{locName}} (${{locId}})</b>`;
+        locationCaption.innerHTML = `${{locName}} (${{locId}})`;
       }} else {{
         locationCaption.textContent = "Click on a map marker to view temperature";
       }}
@@ -3154,26 +3552,311 @@ def f207__d3_region_maps_html(
         renderThermometer(t.containerId, t.labelId, t.valueId, locId, variantKey);
       }}
     }});
+    renderUnitrComparison(locId);
+  }}
+
+  function getLocationCoords(locId) {{
+    if (!locId || !combinedAbsByVar) return null;
+    const locStr = String(locId);
+    for (const [variant, pts] of Object.entries(combinedAbsByVar)) {{
+      if (!Array.isArray(pts)) continue;
+      const row = pts.find(p => String(p.location_id) === locStr);
+      if (row && row.latitude != null && row.longitude != null) {{
+        const lat = Number(row.latitude);
+        const lon = Number(row.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {{
+          return {{ lat, lon }};
+        }}
+      }}
+    }}
+    return null;
+  }}
+
+  function findNearestUnitr(lat, lon) {{
+    if (!Array.isArray(unitrPoints) || !unitrPoints.length) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (const p of unitrPoints) {{
+      const plat = Number(p.lat_geocoded);
+      const plon = Number(p.lon_geocoded);
+      if (!Number.isFinite(plat) || !Number.isFinite(plon)) continue;
+      const dLat = lat - plat;
+      const dLon = lon - plon;
+      const dist2 = dLat * dLat + dLon * dLon;
+      if (dist2 < bestDist) {{
+        bestDist = dist2;
+        best = p;
+      }}
+    }}
+    if (!best) return null;
+    const distKm = Math.sqrt(bestDist) * 111;
+    return {{ point: best, distanceKm: distKm }};
+  }}
+
+  function renderUnitrComparison(locId) {{
+    const container = document.getElementById("unitr_metrics");
+    if (!container) return;
+    const locRow = document.getElementById("unitr_location_row");
+    const hoursIds = ["unitr_hours_tmyx", "unitr_hours_rcp45", "unitr_hours_rcp85"];
+    const hoursLabelEl = document.getElementById("unitr_hours_label");
+    function clearHoursRow() {{
+      hoursIds.forEach(id => {{ const el = document.getElementById(id); if (el) el.textContent = ""; }});
+      if (hoursLabelEl) hoursLabelEl.style.display = "none";
+    }}
+    if (styleReference) {{
+      container.style.display = "block";
+      if (locRow) locRow.textContent = "fs_label";
+      ["unitr_value_delta_tmyx", "unitr_value_delta_rcp45", "unitr_value_delta_rcp85"].forEach(id => {{
+        const el = document.getElementById(id);
+        if (el) el.textContent = "fs_subtitle";
+      }});
+      clearHoursRow();
+      return;
+    }}
+    if (metricKey !== "dTmax" || !locId || !Array.isArray(unitrPoints) || !unitrPoints.length) {{
+      container.style.display = "none";
+      if (locRow) locRow.textContent = "";
+      ["unitr_value_delta_tmyx", "unitr_value_delta_rcp45", "unitr_value_delta_rcp85"].forEach(id => {{
+        const el = document.getElementById(id);
+        if (el) el.textContent = "";
+      }});
+      clearHoursRow();
+      return;
+    }}
+    const coords = getLocationCoords(locId);
+    if (!coords) {{
+      container.style.display = "none";
+      clearHoursRow();
+      return;
+    }}
+    const nearestResult = findNearestUnitr(coords.lat, coords.lon);
+    if (!nearestResult) {{
+      container.style.display = "none";
+      clearHoursRow();
+      return;
+    }}
+    const nearest = nearestResult.point;
+    const normVal = Number(nearest.theta_max_C);
+    const baseKey = (thermoVariants && thermoVariants.tmyx) ? thermoVariants.tmyx : "tmyx";
+    const rcp45Key = (thermoVariants && thermoVariants.rcp45_2050) ? thermoVariants.rcp45_2050 : "rcp45_2050";
+    const rcp85Key = (thermoVariants && thermoVariants.rcp85_2080) ? thermoVariants.rcp85_2080 : "rcp85_2080";
+    const tmyxVal = (getVariantValue(locId, baseKey)).value;
+    if (!Number.isFinite(normVal)) {{
+      container.style.display = "none";
+      clearHoursRow();
+      return;
+    }}
+    container.style.display = "block";
+    const loc = String(nearest.location || "").trim();
+    const prov = String(nearest.province_sigla || "").trim();
+    const distKm = nearestResult.distanceKm != null ? nearestResult.distanceKm.toFixed(1) : "?";
+    if (locRow) {{
+      if (styleReference) {{
+        locRow.textContent = "fs_label";
+      }} else if (loc && prov) {{
+        locRow.innerHTML = `Stazione UNI/TR 10349: <b>${{loc}} (${{prov}})</b> - distanza dalla stazione scelta: <b>${{distKm}} km</b>`;
+      }} else {{
+        locRow.innerHTML = `Stazione UNI/TR 10349 - distanza dalla stazione scelta: <b>${{distKm}} km</b>`;
+      }}
+    }}
+    const fmtDelta = (d) => (d >= 0 ? "+" : "") + d.toFixed(1) + " °C";
+    const deltaTmyx = Number.isFinite(tmyxVal) ? tmyxVal - normVal : null;
+    const rcp45Val = (getVariantValue(locId, rcp45Key)).value;
+    const rcp85Val = (getVariantValue(locId, rcp85Key)).value;
+    const deltaRcp45 = Number.isFinite(rcp45Val) ? rcp45Val - normVal : null;
+    const deltaRcp85 = Number.isFinite(rcp85Val) ? rcp85Val - normVal : null;
+    const deltaTmyxEl = document.getElementById("unitr_value_delta_tmyx");
+    const deltaRcp45El = document.getElementById("unitr_value_delta_rcp45");
+    const deltaRcp85El = document.getElementById("unitr_value_delta_rcp85");
+    const deltaVal = styleReference ? "fs_subtitle" : null;
+    if (deltaTmyxEl) deltaTmyxEl.textContent = deltaVal !== null ? deltaVal : (Number.isFinite(deltaTmyx) ? fmtDelta(deltaTmyx) : "—");
+    if (deltaRcp45El) deltaRcp45El.textContent = deltaVal !== null ? deltaVal : (Number.isFinite(deltaRcp45) ? fmtDelta(deltaRcp45) : "—");
+    if (deltaRcp85El) deltaRcp85El.textContent = deltaVal !== null ? deltaVal : (Number.isFinite(deltaRcp85) ? fmtDelta(deltaRcp85) : "—");
+    // Days exceeding θmax (one per scenario, no grey background)
+    if (hoursLabelEl) {{
+      hoursLabelEl.style.display = "block";
+      hoursLabelEl.textContent = uiLang === "IT" ? "Ore > θmax" : "Hours > θmax";
+    }}
+    function countHoursAbove(series, threshold) {{
+      if (!series || !Array.isArray(series) || !Number.isFinite(threshold)) return null;
+      return series.filter(d => Number(d.v) > threshold).length;
+    }}
+    const hourlyForLoc = getHourlyForLocation(locId);
+    const baseKeyH = (thermoVariants && thermoVariants.tmyx) ? thermoVariants.tmyx : "tmyx";
+    const rcp45KeyH = (thermoVariants && thermoVariants.rcp45_2050) ? thermoVariants.rcp45_2050 : "rcp45_2050";
+    const rcp85KeyH = (thermoVariants && thermoVariants.rcp85_2080) ? thermoVariants.rcp85_2080 : "rcp85_2080";
+    const seriesTmyx = hourlyForLoc[baseKeyH];
+    const seriesRcp45 = hourlyForLoc[rcp45KeyH];
+    const seriesRcp85 = hourlyForLoc[rcp85KeyH];
+    const hasHourly = (hourlyForLoc && Object.keys(hourlyForLoc).length > 0);
+    const countTmyx = hasHourly && seriesTmyx ? countHoursAbove(seriesTmyx, normVal) : null;
+    const countRcp45 = hasHourly && seriesRcp45 ? countHoursAbove(seriesRcp45, normVal) : null;
+    const countRcp85 = hasHourly && seriesRcp85 ? countHoursAbove(seriesRcp85, normVal) : null;
+    const hoursTmyxEl = document.getElementById("unitr_hours_tmyx");
+    const hoursRcp45El = document.getElementById("unitr_hours_rcp45");
+    const hoursRcp85El = document.getElementById("unitr_hours_rcp85");
+    if (hoursTmyxEl) hoursTmyxEl.textContent = countTmyx != null ? String(countTmyx) : "—";
+    if (hoursRcp45El) hoursRcp45El.textContent = countRcp45 != null ? String(countRcp45) : "—";
+    if (hoursRcp85El) hoursRcp85El.textContent = countRcp85 != null ? String(countRcp85) : "—";
   }}
   
+  function filterHourlyByPeriod(series, period) {{
+    if (!series || !Array.isArray(series) || !period) return series || [];
+    const monthNum = {{ june: 6, july: 7, august: 8 }}[period];
+    if (monthNum) {{
+      return series.filter(d => {{
+        const t = d.t != null ? new Date(d.t) : (d.date ? new Date(d.date) : null);
+        return t && t.getMonth() === monthNum - 1;
+      }});
+    }}
+    if (period === "hottest_week") {{
+      const withDate = series.map(d => ({{
+        ...d,
+        _d: d.t != null ? new Date(d.t) : (d.date ? new Date(d.date) : null),
+        _day: (d.t || d.date || "").toString().slice(0, 10)
+      }})).filter(d => d._d);
+      const byDay = {{}};
+      withDate.forEach(d => {{
+        if (!byDay[d._day]) byDay[d._day] = {{ max: -Infinity, points: [] }};
+        byDay[d._day].points.push(d);
+        if (Number(d.v) > byDay[d._day].max) byDay[d._day].max = Number(d.v);
+      }});
+      const days = Object.keys(byDay).sort();
+      let bestStart = 0, bestSum = -Infinity;
+      for (let i = 0; i <= days.length - 7; i++) {{
+        let sum = 0;
+        for (let j = 0; j < 7; j++) sum += (byDay[days[i + j]] || {{}}).max || 0;
+        if (sum > bestSum) {{ bestSum = sum; bestStart = i; }}
+      }}
+      const weekDays = days.slice(bestStart, bestStart + 7);
+      const weekSet = new Set(weekDays);
+      return series.filter(d => {{
+        const day = (d.t || d.date || "").toString().slice(0, 10);
+        return weekSet.has(day);
+      }});
+    }}
+    return series || [];
+  }}
+
+  function renderHourlyChart(locId, period) {{
+    const sel = "#scatter_hourly";
+    d3.select(sel).selectAll("*").remove();
+    const container = d3.select(sel);
+    const hourlyForLoc = getHourlyForLocation(locId);
+    if (!hourlyForLoc || Object.keys(hourlyForLoc).length === 0) {{
+      const msg = uiLang === "IT"
+        ? "Ricarica la pagina con la stazione selezionata per vedere le temperature orarie e Ore > θmax."
+        : "Reload the page with the selected station to view hourly temperatures and Hours > θmax.";
+      const wrap = container.append("div").style("padding", "20px").style("color", "rgba(0,0,0,0.5)").style("font-size", "var(--fs-label)").style("font-family", "var(--font)");
+      wrap.append("span").text(msg);
+      if (currentLocationId && typeof window.parent !== "undefined" && window.parent.location) {{
+        const link = wrap.append("a").attr("href", "#").style("margin-left", "6px").style("color", "#1f77b4").text(uiLang === "IT" ? "Ricarica con dati orari" : "Reload with hourly data");
+        link.on("click", function(e) {{
+          e.preventDefault();
+          try {{
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set("location_id", currentLocationId);
+            window.parent.location.href = url.toString();
+          }} catch (err) {{}}
+        }});
+      }}
+      return;
+    }}
+    const scenarioColors = {{ "tmyx": "#1f77b4", "rcp45_2050": "#ff7f0e", "rcp85_2080": "#d62728", "tmyx__rcp45_2050": "#ff7f0e", "tmyx__rcp85_2080": "#d62728" }};
+    const baseKey = (thermoVariants && thermoVariants.tmyx) ? thermoVariants.tmyx : "tmyx";
+    const rcp45Key = (thermoVariants && thermoVariants.rcp45_2050) ? thermoVariants.rcp45_2050 : "rcp45_2050";
+    const rcp85Key = (thermoVariants && thermoVariants.rcp85_2080) ? thermoVariants.rcp85_2080 : "rcp85_2080";
+    const hourlyVariantsToShow = [baseKey, rcp45Key, rcp85Key].filter(v => v && hourlyForLoc[v]);
+    const allFiltered = [];
+    hourlyVariantsToShow.forEach(variant => {{
+      const raw = hourlyForLoc[variant];
+      const arr = Array.isArray(raw) ? raw : [];
+      const filtered = filterHourlyByPeriod(arr, period || "july");
+      if (filtered.length) {{
+        const withDate = filtered.map(d => ({{
+          ...d,
+          date: d.t != null ? new Date(d.t) : (d.date ? new Date(d.date) : null),
+          v: Number(d.v)
+        }})).filter(d => d.date && Number.isFinite(d.v));
+        const color = scenarioColors[variant] || (variant === rcp45Key || (variant && variant.endsWith("__rcp45_2050")) ? "#ff7f0e" : variant === rcp85Key || (variant && variant.endsWith("__rcp85_2080")) ? "#d62728" : "#1f77b4");
+        if (withDate.length) allFiltered.push({{ variant, pairs: withDate.sort((a,b) => a.date - b.date), color: color }});
+      }}
+    }});
+    if (allFiltered.length === 0) {{
+      container.append("div").style("padding", "20px").style("color", "rgba(0,0,0,0.5)").style("font-size", "var(--fs-label)").text("No hourly data for this period.");
+      return;
+    }}
+    const sw = 800, sh = 340, sm = {{ t: 30, r: 80, b: 45, l: 55 }};
+    let dateMin = null, dateMax = null;
+    const yMin = 0, yMax = 45;
+    allFiltered.forEach(item => {{
+      item.pairs.forEach(d => {{
+        if (d.date) {{
+          if (dateMin === null || d.date < dateMin) dateMin = d.date;
+          if (dateMax === null || d.date > dateMax) dateMax = d.date;
+        }}
+      }});
+    }});
+    if (dateMin && dateMax) {{
+      const range = dateMax - dateMin;
+      dateMin = new Date(dateMin.getTime() - range * 0.02);
+      dateMax = new Date(dateMax.getTime() + range * 0.02);
+    }} else {{
+      dateMin = new Date(2001, 5, 1);
+      dateMax = new Date(2001, 7, 31);
+    }}
+    const x = d3.scaleTime().domain([dateMin, dateMax]).range([sm.l, sw - sm.r]);
+    const y = d3.scaleLinear().domain([yMin, yMax]).range([sh - sm.b, sm.t]);
+    const ssvg = container.append("svg").attr("viewBox", [0, 0, sw, sh]);
+    ssvg.append("g").attr("transform", `translate(0,${{sh - sm.b}})`).call(d3.axisBottom(x).ticks(d3.timeDay.every(3))).call(g => g.selectAll("text").style("font-size", "var(--fs-axis)"));
+    ssvg.append("g").attr("transform", `translate(${{sm.l}},0)`).call(d3.axisLeft(y).ticks(8).tickFormat(d => `${{d}}°C`)).call(g => g.selectAll("text").style("font-size", "var(--fs-axis)"));
+    const line = d3.line().x(d => x(d.date)).y(d => y(d.v)).curve(d3.curveMonotoneX);
+    allFiltered.forEach(item => {{
+      ssvg.append("path").datum(item.pairs).attr("fill", "none").attr("stroke", item.color).attr("stroke-width", 2).attr("d", line);
+    }});
+    const legX = sw - sm.r - 140 - 24, legY = sm.t;
+    function hourlyLegendLabel(v) {{
+      const s = String(v || "");
+      if (s === "tmyx" || (s.startsWith("tmyx") && s.indexOf("__rcp") < 0)) return "TMYx";
+      if (s === "rcp45_2050" || s.endsWith("__rcp45_2050")) return "TMYx - RCP45 - 2050";
+      if (s === "rcp85_2080" || s.endsWith("__rcp85_2080")) return "TMYx - RCP85 - 2080";
+      return v;
+    }}
+    allFiltered.forEach((item, i) => {{
+      ssvg.append("line").attr("x1", legX).attr("x2", legX + 20).attr("y1", legY + i * 20).attr("y2", legY + i * 20).attr("stroke", item.color).attr("stroke-width", 2);
+      ssvg.append("text").attr("x", legX + 24).attr("y", legY + i * 20 + 4).style("font-size", "var(--fs-label)").text(hourlyLegendLabel(item.variant));
+    }});
+  }}
+
   // Render charts for a location (all three scenarios)
   function renderCharts(locId, variant) {{
     currentLocationId = String(locId);
     
-    const locationInfo = document.getElementById("charts_location_info");
-    if (locationInfo) {{
-      // Find location name from any variant
-      const locName = getLocationName(locId);
-      locationInfo.innerHTML = `Location: <b>${{locName}} (${{locId}})</b>`;
+    const mainTitle = document.getElementById("main_title");
+    if (mainTitle) {{
+      if (styleReference) {{
+        mainTitle.textContent = "fs_subtitle";
+      }} else {{
+        const locName = getLocationName(locId);
+        const pctStr = PCT.toFixed(1);
+        mainTitle.textContent = `${{locName}} (${{locId}}) - Tmax (${{pctStr}}th percentile)`;
+      }}
     }}
+    const locationInfo = document.getElementById("charts_location_info");
+    if (locationInfo) locationInfo.textContent = styleReference ? "fs_subtitle" : "";
     
     // Get current time period selection
     const timePeriodSelect = document.getElementById("time_period_select");
     const timePeriod = timePeriodSelect ? timePeriodSelect.value : "entire_year";
     
-    // Render scatter chart
+    // Render scatter chart and hourly chart
     renderScatterChart(locId, timePeriod);
     renderThermometers(locId);
+    if (document.getElementById("scatter_hourly")) {{
+      const hourlyPeriodSelect = document.getElementById("time_period_hourly_select");
+      const hourlyPeriod = hourlyPeriodSelect ? hourlyPeriodSelect.value : "july";
+      renderHourlyChart(locId, hourlyPeriod);
+    }}
   }}
   
   // Add event listener for time period selector (set up after DOM is ready)
@@ -3186,6 +3869,26 @@ def f207__d3_region_maps_html(
         }}
       }});
     }}
+    const timePeriodHourlySelect = document.getElementById("time_period_hourly_select");
+    if (timePeriodHourlySelect) {{
+      timePeriodHourlySelect.addEventListener("change", function() {{
+        if (currentLocationId) renderHourlyChart(currentLocationId, this.value);
+      }});
+    }}
+    document.querySelectorAll(".scatter-tab-btn").forEach(btn => {{
+      btn.addEventListener("click", function() {{
+        document.querySelectorAll(".scatter-tab-btn").forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        const tab = this.getAttribute("data-scatter-tab");
+        document.querySelectorAll(".scatter-tab-panel").forEach(panel => {{
+          panel.classList.toggle("active", (tab === "daily" && panel.id === "scatter_panel_daily") || (tab === "hourly" && panel.id === "scatter_panel_hourly"));
+        }});
+        if (currentLocationId && tab === "hourly") {{
+          const hourlySel = document.getElementById("time_period_hourly_select");
+          renderHourlyChart(currentLocationId, hourlySel ? hourlySel.value : "july");
+        }}
+      }});
+    }});
 
     const tabButtons = document.querySelectorAll(".tab-btn");
     tabButtons.forEach(btn => {{
@@ -3237,8 +3940,17 @@ def f207__d3_region_maps_html(
       // Row 1: TMYx baseline, RCP 4.5 Year 2050, RCP 8.5 Year 2080
       // First map: exact "tmyx" or first non-RCP baseline (e.g. tmyx_2009-2023) so the baseline map always shows
       const row1 = container.append("div").attr("class", "maps-row maps-row-3");
-      const tmyxVariant = baselineVariants.find(v => v === "tmyx") || baselineVariants.find(v => v !== "cti" && !v.includes("__rcp"));
-      if (tmyxVariant && combinedAbsByVar[tmyxVariant]) {{
+      let tmyxVariant = baselineVariants.find(v => v === "tmyx") || baselineVariants.find(v => v !== "cti" && !v.includes("__rcp"));
+      // If chosen baseline has no data (e.g. edge-case inventory), fall back to any baseline with points
+      if (!tmyxVariant || !(combinedAbsByVar[tmyxVariant] || []).length) {{
+        tmyxVariant = Object.keys(combinedAbsByVar || {{}}).find(v =>
+          v !== "cti" &&
+          !v.includes("__rcp") &&
+          Array.isArray(combinedAbsByVar[v]) &&
+          combinedAbsByVar[v].length > 0
+        );
+      }}
+      if (tmyxVariant && (combinedAbsByVar[tmyxVariant] || []).length) {{
         const card1 = row1.append("div").attr("class", "map-card");
         renderMap(card1, tmyxVariant, combinedAbsByVar, tempScale, 40);
       }}

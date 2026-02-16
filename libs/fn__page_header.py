@@ -49,7 +49,8 @@ def f001__create_page_header():
         lang_choice = st.radio(
             "App Language",
             options=["🇬🇧 ENG", "🇮🇹 ITA"],
-            index=1 if st.session_state["ui_lang"] == "IT" else 0,
+            # index=1 if st.session_state["ui_lang"] == "IT" else 0,
+            index=1,
             key="header_lang_radio",
             horizontal=True,
             label_visibility="visible",

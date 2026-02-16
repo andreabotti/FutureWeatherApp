@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 import numpy as np
@@ -15,10 +14,18 @@ from libs.fn__libs_bilingual import label
 from libs.fn__page_header import f001__create_page_header
 from libs.fn__page_welcome import render_welcome_page
 
-# Ensure Streamlit uses the latest local fn__libs.py (avoids stale module issues)
+# Ensure Streamlit uses the latest local fn__libs.py and fn__libs_charts (avoids stale module issues)
+import libs.fn__libs_charts as _fn_charts
+importlib.reload(_fn_charts)
 h = importlib.reload(h)
 h.f101__inject_inter_font()
 h.f102__enable_altair_inter_theme()
+
+# --- Confronto Regione (D3): margin above/below the horizontal divider (px) ---
+D3_DIVIDER_MARGIN_TOP_PX = 56
+D3_DIVIDER_MARGIN_BOTTOM_PX = 30
+
+
 
 
 def _record_timing(name: str, seconds: float, notes: str | None = None) -> None:
@@ -34,195 +41,32 @@ def _timed(name: str, fn, notes: str | None = None):
 
 
 def _baseline_location_ids(idx: pd.DataFrame, baseline_variant: str) -> set[str]:
-    if idx is None or idx.empty:
-        return set()
-    if "variant" not in idx.columns or "location_id" not in idx.columns:
-        return set()
-    return set(idx[idx["variant"] == baseline_variant]["location_id"].astype(str))
+    return h.f130__baseline_location_ids(idx, baseline_variant)
 
 
 def _read_parquet_robust(parquet_path: Path, columns: list = None, **kwargs):
-    """
-    Robust Parquet reader with multiple fallback strategies.
-    Handles PyArrow version incompatibilities and library issues.
-    
-    Tries in order:
-    1. PyArrow with default options
-    2. PyArrow with use_pandas_metadata=False
-    3. PyArrow reading all columns then filtering
-    4. fastparquet engine (if available)
-    5. PyArrow direct API with different options
-    """
-    import pyarrow.parquet as pq
-    import pyarrow as pa
-    
-    # Get PyArrow version for error messages
-    try:
-        pyarrow_version = pa.__version__
-    except:
-        pyarrow_version = "unknown"
-    
-    errors = []
-    
-    # Strategy 1: Standard pandas read with PyArrow (default)
-    try:
-        return pd.read_parquet(parquet_path, columns=columns, engine='pyarrow', **kwargs)
-    except (OSError, Exception) as e:
-        errors.append(f"1. Default PyArrow: {str(e)}")
-    
-    # Strategy 2: PyArrow with use_pandas_metadata=False
-    try:
-        return pd.read_parquet(
-            parquet_path, 
-            columns=columns, 
-            engine='pyarrow',
-            use_pandas_metadata=False,
-            **kwargs
-        )
-    except (OSError, Exception) as e:
-        errors.append(f"2. PyArrow (no pandas metadata): {str(e)}")
-    
-    # Strategy 3: Read all columns then filter (sometimes works when column selection fails)
-    try:
-        df = pd.read_parquet(parquet_path, engine='pyarrow', use_pandas_metadata=False, **kwargs)
-        if columns:
-            return df[columns]
-        return df
-    except (OSError, Exception) as e:
-        errors.append(f"3. PyArrow (read all, filter): {str(e)}")
-    
-    # Strategy 4: Try fastparquet engine (if available)
-    try:
-        return pd.read_parquet(parquet_path, columns=columns, engine='fastparquet', **kwargs)
-    except ImportError:
-        errors.append("4. fastparquet: not installed")
-    except (OSError, Exception) as e:
-        errors.append(f"4. fastparquet: {str(e)}")
-    
-    # Strategy 5: Try PyArrow direct API with minimal options
-    try:
-        table = pq.read_table(parquet_path, columns=columns)
-        return table.to_pandas()
-    except (OSError, Exception) as e:
-        errors.append(f"5. PyArrow direct API: {str(e)}")
-    
-    # Strategy 6: PyArrow direct API reading all columns
-    try:
-        table = pq.read_table(parquet_path)
-        df = table.to_pandas()
-        if columns:
-            return df[columns]
-        return df
-    except (OSError, Exception) as e:
-        errors.append(f"6. PyArrow direct API (all cols): {str(e)}")
-    
-    # All strategies failed - raise with helpful message
-    raise RuntimeError(
-        f"Failed to read Parquet file with multiple strategies.\n"
-        f"File: {parquet_path}\n"
-        f"PyArrow version: {pyarrow_version}\n"
-        f"Errors:\n" + "\n".join(f"  {err}" for err in errors) + "\n"
-        f"\nTry: pip install --upgrade pyarrow or pip install fastparquet"
-    )
+    return h.f131__read_parquet_robust(parquet_path, columns=columns, **kwargs)
 
 
 def _parse_inventory_cols(value) -> list[str]:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
-        return []
-    return [c.strip() for c in str(value).split(";") if c.strip()]
+    return h.f132__parse_inventory_cols(value)
 
 
 def _parse_station_key(station_key: str) -> tuple[str, str]:
-    """Return (location_name, station_id) from station_key."""
-    key = str(station_key or "").strip()
-    m = re.match(r"^(.*)\.(\d{6})$", key)
-    if m:
-        return m.group(1), m.group(2)
-    return key, key
+    return h.f133__parse_station_key(station_key)
 
 
 @st.cache_data(show_spinner=False)
-def _load_epw_index_meta(index_path: Path) -> dict[str, dict[str, object]]:
-    if not index_path.exists():
-        return {}
-    try:
-        with open(index_path, "r", encoding="utf-8") as f:
-            records = json.load(f)
-    except Exception:
-        return {}
-    meta = {}
-    for r in records:
-        station_id = str(r.get("station_id") or r.get("wmo") or "").strip()
-        if not station_id:
-            continue
-        meta[station_id] = {
-            "location_name": r.get("location_name"),
-            "latitude": r.get("latitude"),
-            "longitude": r.get("longitude"),
-            "region": r.get("region"),
-        }
-    return meta
+def _load_epw_index_meta(index_path: Path) -> dict:
+    return h.f134__load_epw_index_meta(index_path)
 
 
 def _normalize_daily_stats_b(daily_stats: pd.DataFrame) -> pd.DataFrame:
-    if daily_stats is None or daily_stats.empty:
-        return pd.DataFrame()
-    df = daily_stats.copy()
-    if "station_key" in df.columns:
-        df["station_key"] = df["station_key"].astype(str).str.strip()
-    if "scenario" in df.columns:
-        df["scenario"] = df["scenario"].astype(str).str.strip()
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
-        df = df.dropna(subset=["date"])
-        df["month"] = df["date"].dt.month.astype(int)
-        df["day"] = df["date"].dt.day.astype(int)
-    if "Tmax" in df.columns and "DBT_max" not in df.columns:
-        df = df.rename(columns={"Tmax": "DBT_max"})
-    if "Tmean" in df.columns and "DBT_mean" not in df.columns:
-        df = df.rename(columns={"Tmean": "DBT_mean"})
-    if "station_key" in df.columns and "scenario" in df.columns:
-        df["rel_path"] = df["station_key"].astype(str) + "__" + df["scenario"].astype(str)
-    return df
+    return h.f135__normalize_daily_stats_b(daily_stats)
 
 
-def _build_idx_from_inventory(inventory: pd.DataFrame, epw_meta: dict[str, dict[str, object]]) -> pd.DataFrame:
-    if inventory is None or inventory.empty:
-        return pd.DataFrame()
-    inv = inventory.copy()
-    inv["station_key"] = inv["station_key"].astype(str).str.strip()
-
-    name_col = "station_name" if "station_name" in inv.columns else "location_name" if "location_name" in inv.columns else None
-    lat_col = "latitude" if "latitude" in inv.columns else "lat" if "lat" in inv.columns else None
-    lon_col = "longitude" if "longitude" in inv.columns else "lon" if "lon" in inv.columns else None
-
-    rows = []
-    for _, r in inv.iterrows():
-        station_key = str(r["station_key"])
-        region = r.get("region")
-        scenarios = _parse_inventory_cols(r.get("cols"))
-        if not scenarios:
-            continue
-        for scenario in scenarios:
-            scenario = str(scenario).strip()
-            loc_name, station_id = _parse_station_key(station_key)
-            base = scenario.split("__", 1)[0]
-            meta = epw_meta.get(str(station_id)) if epw_meta else None
-            rows.append(
-                {
-                    "station_key": station_key,
-                    "location_id": station_id,
-                    "location_name": r.get(name_col) if name_col else loc_name,
-                    "latitude": r.get(lat_col) if lat_col else (meta or {}).get("latitude", pd.NA),
-                    "longitude": r.get(lon_col) if lon_col else (meta or {}).get("longitude", pd.NA),
-                    "region": region,
-                    "variant": scenario,
-                    "group_key": station_key,
-                    "rel_path": f"{station_key}__{scenario}",
-                    "is_cti": False,
-                }
-            )
-    return pd.DataFrame(rows)
+def _build_idx_from_inventory(inventory: pd.DataFrame, epw_meta: dict) -> pd.DataFrame:
+    return h.f136__build_idx_from_inventory(inventory, epw_meta)
 
 
 @st.cache_data(show_spinner=False)
@@ -271,131 +115,17 @@ def _load_cti_list_cached(path: Path) -> pd.DataFrame:
 
 
 def _normalize_monthly_stats_cti(monthly_stats: pd.DataFrame) -> pd.DataFrame:
-    if monthly_stats is None or monthly_stats.empty:
-        return pd.DataFrame()
-    df = monthly_stats.copy()
-    if "station_key" in df.columns:
-        df["station_key"] = df["station_key"].astype(str).str.strip()
-    if "scenario" in df.columns:
-        df["scenario"] = df["scenario"].astype(str).str.strip()
-    if "month" in df.columns:
-        df["month"] = pd.to_datetime(df["month"].astype(str) + "-01", errors="coerce")
-        df = df.dropna(subset=["month"])
-    if "Tmax" in df.columns and "DBT_max" not in df.columns:
-        df = df.rename(columns={"Tmax": "DBT_max"})
-    if "Tmean" in df.columns and "DBT_mean" not in df.columns:
-        df = df.rename(columns={"Tmean": "DBT_mean"})
-    if "Tmin" in df.columns and "DBT_min" not in df.columns:
-        df = df.rename(columns={"Tmin": "DBT_min"})
-    if "station_key" in df.columns and "scenario" in df.columns:
-        df["rel_path"] = df["station_key"].astype(str) + "__" + df["scenario"].astype(str)
-    return df
-
-
-def _normalize_cti_name(value: str) -> str:
-    s = str(value or "").strip().lower()
-    if s.startswith("ita_") and len(s) > 6:
-        s = re.sub(r"^ita_[a-z]{2}_", "", s)
-    if "__" in s:
-        s = s.split("__", 2)[-1]
-    s = s.replace("_", " ")
-    s = re.sub(r"[\\'\\\"`]", "", s)
-    s = re.sub(r"[^a-z0-9]+", "", s)
-    return s
-
-
-def _pick_cti_region(region_value, meta_row) -> str | None:
-    def _clean(code) -> str | None:
-        s = str(code or "").strip()
-        if len(s) == 2 and s.isalpha():
-            return s.upper()
-        return None
-    meta_region = _clean(meta_row.get("region") if meta_row is not None else None)
-    if meta_region:
-        return meta_region
-    return _clean(region_value)
+    return h.f137__normalize_monthly_stats_cti(monthly_stats)
 
 
 def _build_idx_from_cti_inventory(inventory: pd.DataFrame, cti_list: pd.DataFrame) -> pd.DataFrame:
-    if inventory is None or inventory.empty:
-        return pd.DataFrame()
-    inv = inventory.copy()
-    inv["station_key"] = inv["station_key"].astype(str).str.strip()
-
-    list_by_id = {}
-    list_by_name = {}
-    list_by_name_norm = {}
-    if cti_list is not None and not cti_list.empty:
-        for _, r in cti_list.iterrows():
-            loc_id = str(r.get("location_id") or "").strip()
-            loc_name = str(r.get("location_name") or "").strip()
-            if loc_id:
-                list_by_id[loc_id] = r
-            if loc_name:
-                list_by_name[loc_name.lower()] = r
-                key = _normalize_cti_name(loc_name)
-                if key:
-                    list_by_name_norm[key] = r
-
-    rows = []
-    for _, r in inv.iterrows():
-        station_key = str(r["station_key"])
-        region = r.get("region")
-        scenarios = _parse_inventory_cols(r.get("cols")) or ["cti"]
-        for scenario in scenarios:
-            scenario = str(scenario).strip() or "cti"
-            loc_name, station_id = _parse_station_key(station_key)
-            meta = None
-            if list_by_id:
-                meta = list_by_id.get(station_id)
-                if meta is None:
-                    meta = list_by_id.get(station_key)
-            if meta is None and loc_name:
-                meta = list_by_name.get(str(loc_name).lower())
-            if meta is None:
-                meta = list_by_name_norm.get(_normalize_cti_name(loc_name)) if loc_name else None
-            rows.append(
-                {
-                    "station_key": station_key,
-                    "location_id": station_id,
-                    "location_name": (meta.get("location_name") if meta is not None else loc_name) or station_key,
-                    "latitude": meta.get("latitude") if meta is not None else pd.NA,
-                    "longitude": meta.get("longitude") if meta is not None else pd.NA,
-                    "region": _pick_cti_region(region, meta),
-                    "variant": scenario,
-                    "group_key": station_key,
-                    "rel_path": f"{station_key}__{scenario}",
-                    "is_cti": True,
-                }
-            )
-    return pd.DataFrame(rows)
+    return h.f140__build_idx_from_cti_inventory(inventory, cti_list)
 
 
 def _station_hourly_to_long(
     hourly_wide: pd.DataFrame, station_key: str, scenarios: list[str] | None = None
 ) -> pd.DataFrame:
-    if hourly_wide is None or hourly_wide.empty:
-        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
-    df = hourly_wide.copy()
-    if isinstance(df.index, pd.DatetimeIndex):
-        df = df.reset_index().rename(columns={"index": "datetime"})
-        if "datetime" not in df.columns and "dt" in df.columns:
-            df = df.rename(columns={"dt": "datetime"})
-    elif "dt" in df.columns:
-        df = df.rename(columns={"dt": "datetime"})
-    if "datetime" not in df.columns:
-        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
-    df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
-    df = df.dropna(subset=["datetime"])
-    if scenarios:
-        keep_cols = ["datetime"] + [c for c in scenarios if c in df.columns]
-        df = df[keep_cols]
-    value_cols = [c for c in df.columns if c != "datetime"]
-    if not value_cols:
-        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
-    long = df.melt(id_vars=["datetime"], value_vars=value_cols, var_name="scenario", value_name="DBT")
-    long["rel_path"] = str(station_key) + "__" + long["scenario"].astype(str)
-    return long[["rel_path", "datetime", "DBT"]]
+    return h.f141__station_hourly_to_long(hourly_wide, station_key, scenarios=scenarios)
 
 
 # -----------------------------
@@ -407,6 +137,7 @@ f001__create_page_header()
 SCRIPT_DIR = Path(__file__).parent.resolve()
 DEFAULT_B_DATA_DIR = SCRIPT_DIR / "data" / "04__italy_tmy_fwg_parquet"
 DEFAULT_CTI_DATA_DIR = SCRIPT_DIR / "data" / "04__italy_cti_parquet"
+UNITR_CTI_CSV = DEFAULT_CTI_DATA_DIR / "UNITR _10349-22016__Prospetto4.csv"
 DEFAULT_DATA_DIR = DEFAULT_B_DATA_DIR
 # Legacy paths kept for compatibility/debug (not used in B route)
 DEFAULT_INDEX_PATH = DEFAULT_DATA_DIR
@@ -414,74 +145,26 @@ DEFAULT_TIDY_PARQUET = DEFAULT_DATA_DIR / "dbt_rh_tidy.parquet"
 DEFAULT_TMYX_HOURLY_PARQUET = DEFAULT_DATA_DIR / "tmyx_hourly.parquet"
 
 
+@st.cache_data(show_spinner=False)
+def _load_unitr_cti_points(csv_path: Path) -> list[dict]:
+    return h.f142__load_unitr_cti_points(csv_path)
+
+
 def _discover_parquet_files(data_dir: Path) -> list[tuple[Path, str]]:
-    """Discover .parquet files in data_dir for Data Preview. Returns [(path, display_label), ...] sorted by preference."""
-    if not data_dir.exists():
-        return []
-    files: list[tuple[Path, str]] = []
-    # B-route tables
-    tables_dir = data_dir / "_tables"
-    if tables_dir.exists():
-        for p in sorted(tables_dir.glob("*.parquet")):
-            name = p.name
-            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
-                files.append((p, f"{name} (daily stats)"))
-            elif name.startswith("D-CTI__DBT__F-MM__L-"):
-                files.append((p, f"{name} (monthly stats)"))
-            elif "Inventory" in name:
-                files.append((p, f"{name} (inventory)"))
-            else:
-                files.append((p, name))
-    # Per-station hourly parquet (wide)
-    for region_dir in sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name != "_tables"]):
-        for p in sorted(region_dir.glob("*.parquet")):
-            files.append((p, f"{region_dir.name}/{p.name} (station hourly)"))
-
-    # Legacy single-folder parquet (if any)
-    for p in sorted(data_dir.glob("*.parquet")):
-        files.append((p, p.name))
-
-    return files
+    return h.f143__discover_parquet_files(data_dir)
 
 
 def _discover_parquet_files_by_region(data_dir: Path) -> list[tuple[str, list[tuple[Path, str]]]]:
-    """Group parquet files by region for Data Preview tabs. Returns [(region_label, [(path, label), ...]), ...]."""
-    if not data_dir.exists():
-        return []
-    by_region: dict[str, list[tuple[Path, str]]] = {}
-    tables_dir = data_dir / "_tables"
-    if tables_dir.exists():
-        by_region["Tables"] = []
-        for p in sorted(tables_dir.glob("*.parquet")):
-            name = p.name
-            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
-                by_region["Tables"].append((p, f"{name} (daily stats)"))
-            elif name.startswith("D-CTI__DBT__F-MM__L-"):
-                by_region["Tables"].append((p, f"{name} (monthly stats)"))
-            elif "Inventory" in name:
-                by_region["Tables"].append((p, f"{name} (inventory)"))
-            else:
-                by_region["Tables"].append((p, name))
-    for region_dir in sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name != "_tables"]):
-        region_code = region_dir.name
-        by_region[region_code] = []
-        for p in sorted(region_dir.glob("*.parquet")):
-            by_region[region_code].append((p, f"{p.name} (station hourly)"))
-    for p in sorted(data_dir.glob("*.parquet")):
-        by_region.setdefault("Root", []).append((p, p.name))
-    # Return as list of (region, files), Tables first then region codes
-    order = ["Tables"] + sorted(k for k in by_region if k != "Tables" and k != "Root") + (["Root"] if "Root" in by_region else [])
-    return [(r, by_region[r]) for r in order if by_region.get(r)]
+    return h.f144__discover_parquet_files_by_region(data_dir)
 
 # CTI (Itaca) weather stations (hourly DBT) - copy CSVs into this folder for Single Regions Data integration
 DEFAULT_CTI_DIR = SCRIPT_DIR / "data" / "cti"
 CTI_DBT_CSV = DEFAULT_CTI_DIR / "CTI__DBT__ITA_WeatherStations__All.csv"
-_cti_list_candidates = (
-    DEFAULT_CTI_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv",
-    DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv",
-    DEFAULT_CTI_DIR / "CTI__list__ITA_WeatherStations__All.csv",
+CTI_LIST_CSV = (
+    (DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv")
+    if (DEFAULT_B_DATA_DIR / "CTI__list__ITA_WeatherStations__All.csv").exists()
+    else (DEFAULT_CTI_DIR / "CTI__list__ITA_WeatherStations__All.csv")
 )
-CTI_LIST_CSV = next((p for p in _cti_list_candidates if p.exists()), _cti_list_candidates[-1])
 
 # -----------------------------
 # TMYx heatmap settings (edit here, not in UI)
@@ -519,12 +202,7 @@ with st.sidebar:
     # Debug / advanced options moved to Data Preview tab
 
 def _load_index_smart(p: Path) -> pd.DataFrame:
-    """Legacy index loader (unused in B route)."""
-    if p.exists() and p.is_dir():
-        return h.f10b__load_index_auto(p)
-    if p.name.lower() == "epw_index.json" and not p.exists():
-        return h.f10b__load_index_auto(p.parent)
-    return h.f110__load_index(p)
+    return h.f145__load_index_smart(p)
 
 
 # Load inventory + daily stats (B route)
@@ -553,21 +231,8 @@ pairing_debug = _timed(
     notes="Loads pairing debug table.",
 )
 
-# EPW index: prefer 04__italy_tmy_fwg_parquet, then legacy 03__italy_all_epw_DBT_streamlit
-_epw_index_candidates = (
-    DEFAULT_B_DATA_DIR / "D-TMY__epw_index.json",
-    SCRIPT_DIR / "data" / "03__italy_all_epw_DBT_streamlit" / "D-TMY__epw_index.json",
-)
-_epw_index_path = next((p for p in _epw_index_candidates if p.exists()), _epw_index_candidates[-1])
-epw_meta = _load_epw_index_meta(_epw_index_path)
+epw_meta = _load_epw_index_meta(DEFAULT_B_DATA_DIR / "D-TMY__epw_index.json")
 idx = _build_idx_from_inventory(inventory, epw_meta)
-if not epw_meta and not idx.empty:
-    # Coordinates for map markers come from epw_meta; inventory from 06B has no lat/lon.
-    st.warning(
-        "**Map markers may be missing**: No EPW index found for station coordinates. "
-        f"Place `D-TMY__epw_index.json` in `data/04__italy_tmy_fwg_parquet/` or in `data/03__italy_all_epw_DBT_streamlit/`. "
-        f"Tried: {_epw_index_candidates[0]}, {_epw_index_candidates[1]}."
-    )
 station_region_map = (
     inventory.set_index("station_key")["region"].astype(str).to_dict()
     if "station_key" in inventory.columns and "region" in inventory.columns
@@ -641,113 +306,7 @@ def _load_tidy_lazy(tidy_path: Path):
 
 @st.cache_data(show_spinner=False)
 def _load_regional_hourly_by_rel_paths(rel_paths: list, idx: pd.DataFrame, base_dir: Path) -> pd.DataFrame:
-    """
-    Load regional hourly data for specific rel_paths.
-    
-    Groups rel_paths by region and loads only the needed regional files.
-    This is much faster than loading the monolithic tidy parquet.
-    
-    Args:
-        rel_paths: List of rel_path values to filter
-        idx: Index DataFrame with region column
-        base_dir: Base directory containing DBT__HR__XX.parquet files
-    
-    Returns:
-        Combined DataFrame with datetime index and columns: DBT, rel_path, scenario
-    """
-    if not rel_paths:
-        return pd.DataFrame()
-    
-    # Get region codes for the requested rel_paths
-    rel_path_df = pd.DataFrame({"rel_path": rel_paths})
-    rel_path_df = rel_path_df.merge(
-        idx[["rel_path", "region"]].drop_duplicates(),
-        on="rel_path",
-        how="left"
-    )
-    
-    # Fallback: if region is missing or UNK, try to extract from filename/rel_path
-    import re
-    from typing import Optional
-    def extract_region_from_rel_path(rel_path_str: str) -> Optional[str]:
-        """Extract region code from rel_path or filename."""
-        # Try to find ITA_XX_ pattern in the path
-        match = re.search(r"ITA_([A-Z]{2})_", str(rel_path_str).upper())
-        if match:
-            code = match.group(1)
-            valid_codes = ["AB", "BC", "CM", "ER", "FV", "LB", "LG", "LM", "LZ", "MH", "ML", "PM", "PU", "SC", "SD", "TC", "TT", "UM", "VD", "VN"]
-            if code in valid_codes:
-                return code
-        return None
-    
-    # Fix missing or UNK regions by extracting from rel_path
-    missing_regions = rel_path_df["region"].isna() | (rel_path_df["region"] == "UNK")
-    if missing_regions.any():
-        for idx_row in rel_path_df[missing_regions].index:
-            rel_path_str = rel_path_df.loc[idx_row, "rel_path"]
-            extracted = extract_region_from_rel_path(rel_path_str)
-            if extracted:
-                rel_path_df.loc[idx_row, "region"] = extracted
-    
-    # Group by region and load each regional file
-    regional_dfs = []
-    processed_regions = set()
-    
-    for region_code in rel_path_df["region"].dropna().unique():
-        if region_code == "UNK":
-            continue  # Skip UNK regions
-        
-        # Avoid processing the same region twice
-        if region_code in processed_regions:
-            continue
-        processed_regions.add(region_code)
-        
-        region_rel_paths = rel_path_df[rel_path_df["region"] == region_code]["rel_path"].tolist()
-        hourly = h.load_regional_hourly(region_code, base_dir)
-        if not hourly.empty:
-            # Filter to only requested rel_paths
-            if "rel_path" in hourly.columns:
-                # Check if any rel_paths match
-                available_rel_paths = hourly["rel_path"].unique()
-                matching_rel_paths = [rp for rp in region_rel_paths if rp in available_rel_paths]
-                if matching_rel_paths:
-                    filtered = hourly[hourly["rel_path"].isin(matching_rel_paths)]
-                    if not filtered.empty:
-                        regional_dfs.append(filtered)
-                # If no matches but we have data, include all data from this region
-                # (rel_path values might not match exactly, but we still want the data)
-                elif len(available_rel_paths) > 0:
-                    regional_dfs.append(hourly)
-            else:
-                # If rel_path is missing, include all data
-                regional_dfs.append(hourly)
-    
-    # If we still have missing regions, try to find them by checking all regional files
-    # This handles cases where the index has wrong region codes
-    missing_rel_paths = rel_path_df[rel_path_df["region"].isna() | (rel_path_df["region"] == "UNK")]["rel_path"].tolist()
-    if missing_rel_paths:
-        # Try all possible region codes
-        all_region_codes = ["AB", "BC", "CM", "ER", "FV", "LB", "LG", "LM", "LZ", "MH", "ML", "PM", "PU", "SC", "SD", "TC", "TT", "UM", "VD", "VN"]
-        for region_code in all_region_codes:
-            if region_code in processed_regions:
-                continue
-            hourly = h.load_regional_hourly(region_code, base_dir)
-            if not hourly.empty and "rel_path" in hourly.columns:
-                # Check if any of our missing rel_paths are in this file
-                available_rel_paths = set(hourly["rel_path"].unique())
-                found_paths = [rp for rp in missing_rel_paths if rp in available_rel_paths]
-                if found_paths:
-                    filtered = hourly[hourly["rel_path"].isin(found_paths)]
-                    if not filtered.empty:
-                        regional_dfs.append(filtered)
-                        processed_regions.add(region_code)
-    
-    if not regional_dfs:
-        return pd.DataFrame()
-    
-    # Combine all regional dataframes
-    combined = pd.concat(regional_dfs, axis=0)
-    return combined.sort_index()
+    return h.f148__load_regional_hourly_by_rel_paths(rel_paths, idx, base_dir)
 
 
 @st.cache_data(show_spinner=False)
@@ -893,97 +452,16 @@ def _load_daily_stats_cached(daily_stats_path: Path, tidy_path: Path, idx: pd.Da
 
 
 def _compute_daily_stats_from_hourly(hourly: pd.DataFrame) -> pd.DataFrame:
-    """Compute daily stats from hourly DataFrame (datetime may be index or column).
-    
-    Args:
-        hourly: DataFrame with datetime (as index or column) and columns: DBT, rel_path, scenario
-    
-    Returns:
-        DataFrame with columns: rel_path, month, day, DBT_mean, DBT_max
-    """
-    if hourly.empty:
-        return pd.DataFrame()
-    
-    try:
-        # Handle datetime as index or column
-        if isinstance(hourly.index, pd.DatetimeIndex):
-            df = hourly.reset_index()
-        else:
-            df = hourly.copy()
-            if "datetime" not in df.columns:
-                # Try to infer datetime from index name
-                if hourly.index.name == "datetime":
-                    df = hourly.reset_index()
-                else:
-                    raise ValueError(f"Hourly DataFrame must have datetime as index or column. Found columns: {list(df.columns)}, index: {df.index.name}")
-        
-        # Ensure rel_path exists
-        if "rel_path" not in df.columns:
-            raise ValueError(f"Hourly DataFrame must have 'rel_path' column. Found columns: {list(df.columns)}")
-        
-        # Ensure DBT exists
-        if "DBT" not in df.columns:
-            raise ValueError(f"Hourly DataFrame must have 'DBT' column. Found columns: {list(df.columns)}")
-        
-        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
-        df = df.dropna(subset=["datetime", "DBT", "rel_path"])
-        
-        if df.empty:
-            return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
-        
-        df["month"] = df["datetime"].dt.month.astype("int8")
-        df["day"] = df["datetime"].dt.day.astype("int8")
-        
-        # Group by rel_path, month, day and compute daily aggregates
-        daily = df.groupby(["rel_path", "month", "day"], as_index=False, observed=True).agg(
-            DBT_mean=("DBT", "mean"),
-            DBT_max=("DBT", "max"),
-        )
-        
-        # Optimize dtypes
-        daily["rel_path"] = daily["rel_path"].astype("category")
-        daily["DBT_mean"] = daily["DBT_mean"].astype("float32")
-        daily["DBT_max"] = daily["DBT_max"].astype("float32")
-        
-        return daily
-    except Exception as e:
-        st.error(f"Error computing daily stats from hourly data: {e}")
-        st.caption(f"Hourly DataFrame shape: {hourly.shape}, columns: {list(hourly.columns)}, index type: {type(hourly.index)}")
-        return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
+    return h.f146__compute_daily_stats_from_hourly(hourly)
 
 
 @st.cache_data(show_spinner=False)
 def _load_file_stats_cached(daily_stats: pd.DataFrame, percentile: float,
                             precomputed_path: Path):
-    """Load or compute file stats with caching.
-
-    Tries to load precomputed file (from 06B: D-TMYxFWG__FileStats__P-{p}.parquet).
-    File may be single-percentile (no 'percentile' column) or multi-percentile.
-    Falls back to computing from daily_stats if not available.
-    """
-    if precomputed_path.exists():
-        try:
-            file_stats_all = pd.read_parquet(precomputed_path)
-            if "percentile" in file_stats_all.columns:
-                file_stats = file_stats_all[file_stats_all["percentile"] == percentile].copy()
-                if not file_stats.empty:
-                    file_stats = file_stats.drop(columns=["percentile"])
-            else:
-                file_stats = file_stats_all.copy()
-            if not file_stats.empty:
-                return _timed(
-                    "load_file_stats_precomputed",
-                    lambda: file_stats,
-                    notes="Loads precomputed file stats (fast path).",
-                )
-        except Exception:
-            pass  # Fallback to computation
-
-    # Fallback to computation
     return _timed(
-        "f123__build_file_stats_from_daily",
-        lambda: h.f123__build_file_stats_from_daily(daily_stats, percentile),
-        notes="Computes per-file Tmax percentile and Tavg mean from daily stats.",
+        "load_file_stats",
+        lambda: h.f149__file_stats_from_precomputed_or_daily(precomputed_path, daily_stats, percentile),
+        notes="File stats (precomputed or computed).",
     )
 
 
@@ -991,139 +469,43 @@ def _load_file_stats_cached(daily_stats: pd.DataFrame, percentile: float,
 def _load_location_deltas_cached(daily_stats: pd.DataFrame, idx: pd.DataFrame,
                                  baseline_variant: str, compare_variant: str,
                                  percentile: float, precomputed_path: Path):
-    """Load or compute location deltas with caching.
-    
-    Tries to load precomputed location_deltas_by_variant_pair_percentile.parquet first.
-    Falls back to computing from daily_stats if not available.
-    """
-    if precomputed_path.exists():
-        try:
-            deltas_all = pd.read_parquet(precomputed_path)
-            # Convert percentile from percentage (99.0) to decimal (0.99) for comparison
-            percentile_decimal = float(percentile) / 100.0
-            
-            delta_df = deltas_all[
-                (deltas_all["baseline_variant"] == baseline_variant) &
-                (deltas_all["compare_variant"] == compare_variant) &
-                (deltas_all["percentile"] == percentile_decimal)
-            ].copy()
-            
-            if not delta_df.empty:
-                delta_df = delta_df.drop(columns=["baseline_variant", "compare_variant", "percentile"])
-                return _timed(
-                    "load_location_deltas_precomputed",
-                    lambda: delta_df,
-                    notes="Loads precomputed location deltas (fast path).",
-                )
-        except Exception:
-            pass  # Fallback to computation
-    
-    # Fallback to computation
     return _timed(
-        "f125__compute_location_deltas_from_daily",
-        lambda: h.f125__compute_location_deltas_from_daily(
-            daily_stats,
-            idx,
+        "load_location_deltas",
+        lambda: h.f150__location_deltas_from_precomputed_or_daily(
+            precomputed_path, daily_stats, idx,
             baseline_variant=baseline_variant,
             compare_variant=compare_variant,
             percentile=float(percentile),
         ),
-        notes="Computes per-location max monthly ΔT for map/table.",
+        notes="Location deltas (precomputed or computed).",
     )
 
 
 @st.cache_data(show_spinner=False)
 def _load_precomputed_location_stats(variant: str, percentile: float, daily_stats, idx, precomputed_path: Path):
-    """Try to load precomputed location stats with caching, fallback to computation.
-    
-    Args:
-        variant: Variant name
-        percentile: Percentile as decimal (0.99 for 99th percentile)
-        daily_stats: Daily stats DataFrame (for fallback)
-        idx: Index DataFrame (for fallback)
-        precomputed_path: Path to precomputed location stats parquet file
-    """
-    if precomputed_path.exists():
-        try:
-            stats_all = pd.read_parquet(precomputed_path)
-            stats_df = stats_all[
-                (stats_all["variant"] == variant) &
-                (stats_all["percentile"] == percentile)
-            ].copy()
-            if not stats_df.empty:
-                stats_df = stats_df.drop(columns=["variant", "percentile"])
-                return _timed(
-                    "load_location_stats_precomputed",
-                    lambda: stats_df,
-                    notes=f"Loads precomputed location stats for {variant}.",
-                )
-        except Exception:
-            pass  # Fallback to computation
-    
     return _timed(
-        "f28b__compute_location_stats_for_variant_from_daily",
-        lambda: h.f28b__compute_location_stats_for_variant_from_daily(
-            daily_stats, idx, variant=variant, percentile=percentile
+        "load_location_stats",
+        lambda: h.f151__location_stats_from_precomputed_or_compute(
+            precomputed_path, variant, percentile, daily_stats, idx
         ),
-        notes=f"Computes location stats for {variant}.",
+        notes=f"Location stats for {variant}.",
     )
 
 
 def _filter_cti_points_by_region(cti_points: list, region_code: str | None) -> list:
-    """Return CTI points that fall within the given region (region code, e.g. 'LM').
-    Used for server-side filtering when needed; the D3 CTI map also filters by selected region client-side via localStorage.
-    """
-    if not region_code:
-        return cti_points
-    return [p for p in cti_points if str(p.get("region")) == str(region_code)]
+    return h.f147__filter_cti_points_by_region(cti_points, region_code)
 
 
 @st.cache_data(show_spinner=False)
 def _load_precomputed_monthly_delta_table(baseline_variant: str, compare_variant: str, 
                                          percentile: float, metric_key: str, 
                                          daily_stats, idx, precomputed_path: Path):
-    """Try to load precomputed monthly delta table with caching, fallback to computation.
-    
-    Args:
-        baseline_variant: Baseline variant name
-        compare_variant: Compare variant name
-        percentile: Percentile as percentage (99.0 for 99th percentile)
-        metric_key: "dTmax" or "dTavg"
-        daily_stats: Daily stats DataFrame (for fallback)
-        idx: Index DataFrame (for fallback)
-        precomputed_path: Path to precomputed monthly delta tables parquet file
-    """
-    if precomputed_path.exists():
-        try:
-            tables_all = pd.read_parquet(precomputed_path)
-            # Convert percentile from percentage (99.0) to decimal (0.99) for comparison
-            percentile_decimal = float(percentile) / 100.0
-            table_df = tables_all[
-                (tables_all["baseline_variant"] == baseline_variant) &
-                (tables_all["compare_variant"] == compare_variant) &
-                (tables_all["percentile"] == percentile_decimal) &
-                (tables_all["metric_key"] == metric_key)
-            ].copy()
-            if not table_df.empty:
-                table_df = table_df.drop(columns=["baseline_variant", "compare_variant", "percentile", "metric_key"])
-                return _timed(
-                    "load_monthly_delta_table_precomputed",
-                    lambda: table_df,
-                    notes="Loads precomputed monthly delta table.",
-                )
-        except Exception:
-            pass  # Fallback to computation
-    
     return _timed(
-        "f124__build_monthly_delta_table",
-        lambda: h.f124__build_monthly_delta_table(
-            daily_stats, idx,
-            baseline_variant=baseline_variant,
-            compare_variant=compare_variant,
-            percentile=float(percentile) / 100.0,
-            metric_key=metric_key,
+        "load_monthly_delta_table",
+        lambda: h.f152__monthly_delta_from_precomputed_or_compute(
+            precomputed_path, baseline_variant, compare_variant, percentile, metric_key, daily_stats, idx
         ),
-        notes="Builds monthly delta table (fallback when 06B precomputed file missing).",
+        notes="Monthly delta table (precomputed or computed).",
     )
 
 
@@ -1377,7 +759,7 @@ def _render_cti_data_tab() -> None:
     if not CTI_LIST_CSV.exists():
         st.warning(
             "CTI list file not found. Place `CTI__list__ITA_WeatherStations__All.csv` in "
-            "`data/04__italy_cti_parquet/`, `data/04__italy_tmy_fwg_parquet/`, or `data/cti/`."
+            "`data/04__italy_tmy_fwg_parquet/` or `data/cti/`."
         )
         return
     try:
@@ -1947,9 +1329,9 @@ with top_tabs[1]:
 
         if show_d3_regions_v2:
             # Explicit size controls for the Future Climate — Italian Regions layout
-            V2_DASHBOARD_COLS = "5.5fr 4fr 1fr"
+            V2_DASHBOARD_COLS = "5.5fr 24px 4fr"
             V2_MAPS_ROW_GAP_PX = 10
-            V2_MAPS_ROW3_GAP_PX = 4
+            V2_MAPS_ROW3_GAP_PX = 3
             region_code_to_name = {
                 "AB": "Abruzzo",
                 "BC": "Basilicata",
@@ -2129,6 +1511,193 @@ with top_tabs[1]:
                     "• Click a marker to update charts"
                 )
 
+                unitr_points: list[dict] = []
+                if UNITR_CTI_CSV.exists():
+                    unitr_points = _load_unitr_cti_points(UNITR_CTI_CSV)
+
+                # Hourly data for "Ore > θmax" and Temperature orarie tab: use same files as Data Preview (station hourly by region)
+                selected_location_id = st.query_params.get("location_id")
+                hourly_series_by_location_id: dict = {}
+                MAX_HOURLY_STATIONS = 12  # cap to stay under Streamlit message size limit (~200 MB)
+                loc_ids_to_load: list[str] = []
+                if not idx.empty and top_combined_abs:
+                    seen: set[str] = set()
+                    for variant_key, points in top_combined_abs.items():
+                        for pt in points:
+                            lid = pt.get("location_id")
+                            if lid is not None:
+                                sid = str(lid).strip()
+                                if sid and sid not in seen:
+                                    seen.add(sid)
+                                    loc_ids_to_load.append(sid)
+                                    if len(loc_ids_to_load) >= MAX_HOURLY_STATIONS:
+                                        break
+                        if len(loc_ids_to_load) >= MAX_HOURLY_STATIONS:
+                            break
+
+                # Primary path: discover station hourly parquets the same way as Data Preview, match by file stem to location_id
+                by_region = _discover_parquet_files_by_region(DEFAULT_B_DATA_DIR)
+                loaded_count = 0
+                for region_label, region_files in by_region:
+                    if region_label in ("Tables", "Root") or loaded_count >= MAX_HOURLY_STATIONS:
+                        continue
+                    region_code = region_label
+                    for path, file_label in region_files:
+                        if "hourly" not in file_label.lower() or not path.exists():
+                            continue
+                        stem = path.stem
+                        if not stem:
+                            continue
+                        # Match file to location: idx row where region matches and (station_key or location_id) matches stem
+                        loc_rows = idx[
+                            (idx["region"].astype(str).str.strip() == str(region_code).strip())
+                            & (
+                                (idx["station_key"].astype(str).str.strip() == stem)
+                                | (idx["location_id"].astype(str).str.strip() == stem)
+                            )
+                        ]
+                        if loc_rows.empty:
+                            continue
+                        loc_id = str(loc_rows.iloc[0]["location_id"]).strip()
+                        if loc_id in hourly_series_by_location_id:
+                            continue
+                        try:
+                            hourly_wide = _read_parquet_robust(path)
+                        except Exception:
+                            continue
+                        if hourly_wide is None or hourly_wide.empty:
+                            continue
+                        long_hourly = _station_hourly_to_long(hourly_wide, stem, scenarios=None)
+                        if long_hourly.empty or "datetime" not in long_hourly.columns or "DBT" not in long_hourly.columns:
+                            continue
+                        hourly_series_by_location_id[loc_id] = {}
+                        long_hourly["_month"] = pd.to_datetime(long_hourly["datetime"], errors="coerce").dt.month
+                        summer = long_hourly[long_hourly["_month"].isin([6, 7, 8])]
+                        for sc in long_hourly["scenario"].dropna().unique().tolist():
+                            sc_str = str(sc).strip()
+                            if not sc_str:
+                                continue
+                            sub = summer[summer["scenario"] == sc]
+                            series = [
+                                {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
+                                for _, row in sub.iterrows()
+                                if pd.notna(row.get("DBT"))
+                            ]
+                            hourly_series_by_location_id[loc_id][sc_str] = series
+                        for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
+                            if alias_from in hourly_series_by_location_id[loc_id] and alias_to not in hourly_series_by_location_id[loc_id]:
+                                hourly_series_by_location_id[loc_id][alias_to] = hourly_series_by_location_id[loc_id][alias_from]
+                        loaded_count += 1
+                        if loaded_count >= MAX_HOURLY_STATIONS:
+                            break
+                    if loaded_count >= MAX_HOURLY_STATIONS:
+                        break
+
+                if not selected_location_id and hourly_series_by_location_id:
+                    selected_location_id = next(iter(hourly_series_by_location_id))
+                # If user asked for a specific station via URL, ensure we load it even if beyond the cap
+                if selected_location_id and selected_location_id not in hourly_series_by_location_id and not idx.empty:
+                    loc_row = idx[idx["location_id"].astype(str) == str(selected_location_id)]
+                    if not loc_row.empty:
+                        r = loc_row.iloc[0]
+                        region_val, station_key_val = r.get("region"), r.get("station_key")
+                        region_str = str(region_val).strip() if pd.notna(region_val) else ""
+                        sk_str = str(station_key_val).strip() if pd.notna(station_key_val) else ""
+                        hourly_wide = None
+                        if region_str and sk_str:
+                            hourly_wide = _load_station_hourly_cached(DEFAULT_B_DATA_DIR, region_str, sk_str)
+                        if (hourly_wide is None or hourly_wide.empty) and by_region:
+                            for _reg_label, _reg_files in by_region:
+                                if _reg_label in ("Tables", "Root"):
+                                    continue
+                                if _reg_label != region_str and str(r.get("region")).strip() != _reg_label:
+                                    continue
+                                for _path, _label in _reg_files:
+                                    if "hourly" not in _label.lower() or not _path.exists():
+                                        continue
+                                    if _path.stem != sk_str and _path.stem != str(selected_location_id):
+                                        continue
+                                    try:
+                                        hourly_wide = _read_parquet_robust(_path)
+                                    except Exception:
+                                        continue
+                                    if hourly_wide is not None and not hourly_wide.empty:
+                                        break
+                                if hourly_wide is not None and not hourly_wide.empty:
+                                    break
+                        if hourly_wide is not None and not hourly_wide.empty:
+                            long_hourly = _station_hourly_to_long(hourly_wide, sk_str, scenarios=None)
+                            if not long_hourly.empty and "datetime" in long_hourly.columns and "DBT" in long_hourly.columns:
+                                long_hourly["_month"] = pd.to_datetime(long_hourly["datetime"], errors="coerce").dt.month
+                                summer = long_hourly[long_hourly["_month"].isin([6, 7, 8])]
+                                hourly_series_by_location_id[selected_location_id] = {}
+                                for sc in long_hourly["scenario"].dropna().unique().tolist():
+                                    sc_str = str(sc).strip()
+                                    if not sc_str:
+                                        continue
+                                    sub = summer[summer["scenario"] == sc]
+                                    series = [
+                                        {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
+                                        for _, row in sub.iterrows()
+                                        if pd.notna(row.get("DBT"))
+                                    ]
+                                    hourly_series_by_location_id[selected_location_id][sc_str] = series
+                                for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
+                                    if alias_from in hourly_series_by_location_id[selected_location_id] and alias_to not in hourly_series_by_location_id[selected_location_id]:
+                                        hourly_series_by_location_id[selected_location_id][alias_to] = hourly_series_by_location_id[selected_location_id][alias_from]
+
+                # Fallback: if no per-station parquet found, try regional hourly (e.g. D-*__DBT__F-HR__L-XX.parquet)
+                if not hourly_series_by_location_id and not idx.empty and loc_ids_to_load:
+                    for loc_id in loc_ids_to_load[:10]:
+                        rel_paths = idx[idx["location_id"].astype(str) == loc_id]["rel_path"].dropna().unique().tolist()
+                        if not rel_paths:
+                            continue
+                        regional_hourly = _load_regional_hourly_by_rel_paths(rel_paths, idx, DEFAULT_B_DATA_DIR)
+                        if regional_hourly.empty or "DBT" not in regional_hourly.columns or "rel_path" not in regional_hourly.columns:
+                            continue
+                        if isinstance(regional_hourly.index, pd.DatetimeIndex):
+                            regional_hourly = regional_hourly.reset_index()
+                        if "datetime" not in regional_hourly.columns:
+                            for _c in ("index", "date", "time", "timestamp"):
+                                if _c in regional_hourly.columns:
+                                    regional_hourly = regional_hourly.rename(columns={_c: "datetime"})
+                                    break
+                        if "datetime" not in regional_hourly.columns:
+                            continue
+                        regional_hourly["datetime"] = pd.to_datetime(regional_hourly["datetime"], errors="coerce")
+                        regional_hourly = regional_hourly.dropna(subset=["datetime", "DBT"])
+                        regional_hourly["_month"] = regional_hourly["datetime"].dt.month
+                        summer_reg = regional_hourly[regional_hourly["_month"].isin([6, 7, 8])]
+                        hourly_series_by_location_id[loc_id] = {}
+                        for rp in rel_paths:
+                            scenario = str(rp).split("__", 1)[-1] if "__" in str(rp) else str(rp)
+                            sub = summer_reg[summer_reg["rel_path"] == rp]
+                            series = [
+                                {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
+                                for _, row in sub.iterrows()
+                                if pd.notna(row.get("DBT"))
+                            ]
+                            if series:
+                                hourly_series_by_location_id[loc_id][scenario] = series
+                        for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
+                            if loc_id in hourly_series_by_location_id and alias_from in hourly_series_by_location_id[loc_id] and alias_to not in hourly_series_by_location_id[loc_id]:
+                                hourly_series_by_location_id[loc_id][alias_to] = hourly_series_by_location_id[loc_id][alias_from]
+                        if hourly_series_by_location_id:
+                            if not selected_location_id:
+                                selected_location_id = loc_id
+                            break
+
+                # Uniform fonts for D3 dashboard (always on, Inter default; no UI)
+                font_theme = {
+                    "enabled": True,
+                    "font_family": '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                    "fs_title": 18,
+                    "fs_subtitle": 15,
+                    "fs_label": 10,
+                    "fs_small": 10,
+                    "fs_axis": 11,
+                }
+
                 html_v2 = h.f23d__d3_region_maps_html(
                     baseline_variants=list(top_combined_abs.keys()),
                     abs_points_by_variant=top_combined_abs,
@@ -2141,6 +1710,8 @@ with top_tabs[1]:
                     initial_region=None,
                     click_callback_key="single_regions_location_click_v2",
                     profiles_bundle_by_variant=profiles_bundle_by_variant if profiles_bundle_by_variant else None,
+                    unitr_points=unitr_points,
+                    font_theme=font_theme,
                     hide_region_selector=False,
                     layout_mode="columns",
                     cti_on_top=True,
@@ -2149,8 +1720,67 @@ with top_tabs[1]:
                     dashboard_cols=V2_DASHBOARD_COLS,
                     maps_row_gap_px=V2_MAPS_ROW_GAP_PX,
                     maps_row3_gap_px=V2_MAPS_ROW3_GAP_PX,
+                    thermo_separator_gap_px=D3_DIVIDER_MARGIN_TOP_PX,
+                    divider_margin_bottom_px=D3_DIVIDER_MARGIN_BOTTOM_PX,
+                    ui_lang=st.session_state.get("ui_lang", "EN"),
+                    hourly_series_by_variant=None,
+                    initial_selected_location_id=selected_location_id,
+                    hourly_series_by_location_id=hourly_series_by_location_id if hourly_series_by_location_id else None,
                 )
                 components.html(html_v2, height=1150, scrolling=False)
+
+                # Debug maps utility (underneath D3 dashboard, not in sidebar)
+                DEBUG_MAPS = st.checkbox("Debug maps", value=False, key="debug_maps_confronto_regione")
+                if DEBUG_MAPS:
+                    value_label = "Tmax" if metric_key == "dTmax" else "Tavg"
+                    st.write(
+                        f"**Metric:** {value_label} (value column) | **Variants:** {list(top_combined_abs.keys())}"
+                    )
+                    for variant_key in top_combined_abs.keys():
+                        points = top_combined_abs.get(variant_key, [])
+                        df_variant = pd.DataFrame(points)
+                        # Columns for display: location_name, value (Tmax/Tavg), latitude, longitude, region
+                        plot_cols = [c for c in ["location_name", "value", "latitude", "longitude", "region"] if c in df_variant.columns]
+
+                        with st.expander(f"**{variant_key}** — {len(points)} points", expanded=variant_key == base_for_default):
+                            if df_variant.empty:
+                                st.warning(f"No points for {variant_key} — markers will not appear on this map")
+                            else:
+                                st.dataframe(
+                                    df_variant[plot_cols] if plot_cols else df_variant,
+                                    use_container_width=True,
+                                    height=min(200, 35 * len(df_variant) + 38),
+                                )
+                                df_dbg = h.debug_map_df(
+                                    df_variant,
+                                    label=f"D3 map df ({variant_key})",
+                                    region_code=None,
+                                    metric_col="value",
+                                )
+                                if df_dbg is not None and not df_dbg.empty:
+                                    lat_col = next((c for c in ["lat", "latitude"] if c in df_dbg.columns), None)
+                                    lon_col = next((c for c in ["lon", "longitude", "lng"] if c in df_dbg.columns), None)
+                                    if lat_col and lon_col:
+                                        import plotly.express as px
+
+                                        df_plot = df_dbg.dropna(subset=[lat_col, lon_col])
+                                        if df_plot.empty:
+                                            st.warning("All rows have null lat/lon — cannot plot")
+                                        else:
+                                            fig_dbg = px.scatter_mapbox(
+                                                df_plot,
+                                                lat=lat_col,
+                                                lon=lon_col,
+                                                color="value" if "value" in df_plot.columns else None,
+                                                hover_name="location_name" if "location_name" in df_plot.columns else None,
+                                                hover_data=["value"] if "value" in df_plot.columns else None,
+                                                zoom=6,
+                                                height=420,
+                                            )
+                                            fig_dbg.update_traces(marker={"size": 12, "opacity": 0.9})
+                                            st.plotly_chart(fig_dbg, use_container_width=True)
+                                    else:
+                                        st.warning(f"Missing lat/lon: lat_col={lat_col}, lon_col={lon_col}")
 
     with scenario_tabs[3]:
         st.markdown(f"##### {label('current_weather_data_tmyx')}")
@@ -2270,6 +1900,12 @@ with top_tabs[1]:
                     step=1,
                     key="tmyx_month_range",
                 )
+                show_charts_tmyx = st.toggle(
+                    "Show Charts",
+                    value=True,
+                    key="tmyx_show_charts_toggle",
+                    help="Enable to load Plotly heatmaps, scatter and stacked column charts.",
+                )
 
             loc_id = loc_id_map.get(loc_label)
             station_key = loc_station_map.get(loc_label)
@@ -2296,97 +1932,126 @@ with top_tabs[1]:
                         station_hourly_long["datetime"].dt.month.between(start_month, end_month)
                     ].copy()
 
-                # Row 1: Charts / KPIs
-                # Use margin-bottom (can be negative) to control spacing between header/legend row and charts row.
-                # Negative values will "lift" the charts row up.
-                st.markdown(
-                    f"<div style='height:0px; margin-bottom:{TMYX_HEADER_TO_CHARTS_GAP_PX}px'></div>",
-                    unsafe_allow_html=True,
-                )
+                # Optional: show Plotly charts only when toggle is on
+                if not show_charts_tmyx:
+                    st.info("Enable **Show Charts** to load heatmaps, daily scatter and stacked column charts.")
+                else:
+                    st.markdown(
+                        f"<div style='height:0px; margin-bottom:{TMYX_HEADER_TO_CHARTS_GAP_PX}px'></div>",
+                        unsafe_allow_html=True,
+                    )
                 row1 = st.columns([1, 1, 1, 0.9], gap="medium")
-                with row1[0]:
-                    heatmap_fig = _timed(
-                        "f34__plotly_tmyx_heatmap_subplots",
-                        lambda: h.f34__plotly_tmyx_heatmap_subplots(
-                            tmyx_hourly_filtered,
-                            idx,
-                            location_id=loc_id,
-                            variants=present_variants,
-                            colorscale=HEATMAP_COLORSCALE,
-                            zmin=HEATMAP_ZMIN,
-                            zmax=HEATMAP_ZMAX,
-                            subplot_height=TMYX_CHART_HEIGHT,
-                            vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
-                            show_subplot_titles=True,
-                            subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
-                            subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
-                            subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
-                            margin=TMYX_CHART_MARGIN,
-                        ),
-                        notes="Builds TMYx heatmap subplot figure across variants.",
-                    )
-                    if heatmap_fig is not None:
-                        # Legend is in the header row; hide colorbars inside the figure.
-                        heatmap_fig.update_traces(showscale=False)
-                        st.plotly_chart(heatmap_fig, width="stretch", key=f"heatmap_subplots_{loc_id}")
-                    else:
-                        st.info("No heatmap data available.")
+                if show_charts_tmyx:
+                    with row1[0]:
+                        heatmap_fig = _timed(
+                            "f34__plotly_tmyx_heatmap_subplots",
+                            lambda: h.f34__plotly_tmyx_heatmap_subplots(
+                                tmyx_hourly_filtered,
+                                idx,
+                                location_id=loc_id,
+                                variants=present_variants,
+                                colorscale=HEATMAP_COLORSCALE,
+                                zmin=HEATMAP_ZMIN,
+                                zmax=HEATMAP_ZMAX,
+                                subplot_height=TMYX_CHART_HEIGHT,
+                                vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
+                                show_subplot_titles=True,
+                                subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
+                                subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
+                                subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
+                                margin=TMYX_CHART_MARGIN,
+                            ),
+                            notes="Builds TMYx heatmap subplot figure across variants.",
+                        )
+                        if heatmap_fig is not None:
+                            heatmap_fig.update_traces(showscale=False)
+                            st.plotly_chart(heatmap_fig, width="stretch", key=f"heatmap_subplots_{loc_id}")
+                        else:
+                            st.info("No heatmap data available.")
 
-                with row1[1]:
-                    scatter_fig = _timed(
-                        "f35__plotly_tmyx_scatter_subplots",
-                        lambda: h.f35__plotly_tmyx_scatter_subplots(
-                            tmyx_hourly_filtered,
-                            idx,
-                            location_id=loc_id,
-                            variants=present_variants,
-                            subplot_height=TMYX_CHART_HEIGHT,
-                            vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
-                            show_subplot_titles=True,
-                            subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
-                            subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
-                            subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
-                            margin=TMYX_CHART_MARGIN,
-                            y_range=(HEATMAP_ZMIN, HEATMAP_ZMAX + 1),
-                        ),
-                        notes="Builds TMYx daily scatter subplot figure across variants.",
-                    )
-                    if scatter_fig is not None:
-                        # Legend is in the header row; hide legend inside the figure.
-                        scatter_fig.update_layout(showlegend=False)
-                        st.plotly_chart(scatter_fig, width="stretch", key=f"scatter_subplots_{loc_id}")
-                    else:
-                        st.info("No scatter data available.")
+                    with row1[1]:
+                        scatter_fig = _timed(
+                            "f35__plotly_tmyx_scatter_subplots",
+                            lambda: h.f35__plotly_tmyx_scatter_subplots(
+                                tmyx_hourly_filtered,
+                                idx,
+                                location_id=loc_id,
+                                variants=present_variants,
+                                subplot_height=TMYX_CHART_HEIGHT,
+                                vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
+                                show_subplot_titles=True,
+                                subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
+                                subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
+                                subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
+                                margin=TMYX_CHART_MARGIN,
+                                y_range=(HEATMAP_ZMIN, HEATMAP_ZMAX + 1),
+                            ),
+                            notes="Builds TMYx daily scatter subplot figure across variants.",
+                        )
+                        if scatter_fig is not None:
+                            scatter_fig.update_layout(showlegend=False)
+                            st.plotly_chart(scatter_fig, width="stretch", key=f"scatter_subplots_{loc_id}")
+                        else:
+                            st.info("No scatter data available.")
 
-                with row1[2]:
-                    stacked_fig = _timed(
-                        "f36__plotly_tmyx_stacked_subplots",
-                        lambda: h.f36__plotly_tmyx_stacked_subplots(
-                            tmyx_hourly_filtered,
-                            idx,
-                            location_id=loc_id,
-                            variants=present_variants,
-                            subplot_height=TMYX_CHART_HEIGHT,
-                            vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
-                            show_subplot_titles=True,
-                            subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
-                            subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
-                            subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
-                            margin=TMYX_CHART_MARGIN,
-                            temp_min=HEATMAP_ZMIN,
-                            temp_max=HEATMAP_ZMAX,
-                            colorscale=HEATMAP_COLORSCALE,
-                        ),
-                        notes="Builds TMYx stacked columns subplot figure across variants.",
-                    )
-                    if stacked_fig is not None:
-                        # Legend is in the header row; hide legend inside the figure.
-                        stacked_fig.update_layout(showlegend=False)
-                        st.plotly_chart(stacked_fig, width="stretch", key=f"stacked_subplots_{loc_id}")
-                    else:
-                        st.info("No stacked column data available.")
+                    with row1[2]:
+                        stacked_fig = _timed(
+                            "f36__plotly_tmyx_stacked_subplots",
+                            lambda: h.f36__plotly_tmyx_stacked_subplots(
+                                tmyx_hourly_filtered,
+                                idx,
+                                location_id=loc_id,
+                                variants=present_variants,
+                                subplot_height=TMYX_CHART_HEIGHT,
+                                vertical_spacing=TMYX_SUBPLOT_VERTICAL_SPACING,
+                                show_subplot_titles=True,
+                                subplot_title_font_size=TMYX_SUBPLOT_TITLE_FONTSIZE,
+                                subplot_title_yshift=TMYX_SUBPLOT_TITLE_YSHIFT,
+                                subplot_title_bold=TMYX_SUBPLOT_TITLE_BOLD,
+                                margin=TMYX_CHART_MARGIN,
+                                temp_min=HEATMAP_ZMIN,
+                                temp_max=HEATMAP_ZMAX,
+                                colorscale=HEATMAP_COLORSCALE,
+                            ),
+                            notes="Builds TMYx stacked columns subplot figure across variants.",
+                        )
+                        if stacked_fig is not None:
+                            stacked_fig.update_layout(showlegend=False)
+                            st.plotly_chart(stacked_fig, width="stretch", key=f"stacked_subplots_{loc_id}")
+                        else:
+                            st.info("No stacked column data available.")
 
                 with row1[3]:
+                    # Ore > θmax: from UNI/TR nearest station θmax, count hours above it (no scatter chart needed)
+                    _unitr_tmyx = _load_unitr_cti_points(UNITR_CTI_CSV) if UNITR_CTI_CSV.exists() else []
+                    theta_max_c = None
+                    if _unitr_tmyx and not station_hourly_long.empty:
+                        _loc_row = idx[idx["location_id"].astype(str) == str(loc_id)]
+                        if not _loc_row.empty:
+                            _lat = _loc_row.iloc[0].get("latitude")
+                            _lon = _loc_row.iloc[0].get("longitude")
+                            if pd.notna(_lat) and pd.notna(_lon):
+                                _lat, _lon = float(_lat), float(_lon)
+                                _best = None
+                                _best_d2 = float("inf")
+                                for _p in _unitr_tmyx:
+                                    _u = float(_p.get("lat_geocoded", 0))
+                                    _v = float(_p.get("lon_geocoded", 0))
+                                    _d2 = (_lat - _u) ** 2 + (_lon - _v) ** 2
+                                    if _d2 < _best_d2:
+                                        _best_d2 = _d2
+                                        _best = _p
+                                if _best is not None:
+                                    theta_max_c = float(_best.get("theta_max_C"))
+                    if theta_max_c is not None and not station_hourly_long.empty and "scenario" in station_hourly_long.columns and "DBT" in station_hourly_long.columns:
+                        st.markdown("###### Ore &gt; θmax")
+                        _above = station_hourly_long[station_hourly_long["DBT"] > theta_max_c].groupby("scenario", observed=True).size()
+                        def _shorten(v):
+                            return v.replace("tmyx_", "", 1) if v.startswith("tmyx_") else v
+                        for _v in present_variants:
+                            _h = int(_above.get(_v, 0))
+                            st.metric(label=_shorten(_v), value=f"{_h:,}", help=f"Hours with DBT > θmax ({theta_max_c:.1f}°C) — UNI/TR 10349")
+                        st.markdown("---")
                     st.markdown("###### Hours Above Threshold")
 
                     # Inject CSS to reduce metric font sizes
@@ -2617,7 +2282,7 @@ with top_tabs[2]:
             data_preview_tabs = st.tabs(region_tab_names)
             for tab, (region_code, region_files) in zip(data_preview_tabs, by_region):
                 with tab:
-                    for pa, label in region_files:
+                    for pa, _file_label in region_files:
                         try:
                             df_p = _read_parquet_robust(pa)
                             if df_p is None or df_p.empty:

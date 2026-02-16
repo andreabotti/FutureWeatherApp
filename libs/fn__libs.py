@@ -41,6 +41,95 @@ def _ensure_lat_lon_columns(idx: pd.DataFrame) -> pd.DataFrame:
     return idx
 
 
+def debug_map_df(
+    df: pd.DataFrame | None,
+    label: str = "df",
+    region_code: str | None = None,
+    metric_col: str | None = None,
+    id_cols: list[str] | None = None,
+    mutate: bool = False,
+) -> pd.DataFrame | None:
+    """
+    Minimal debug helper for map issues (no markers).
+    Prints shape/columns, null counts for lat/lon/metric, and small preview.
+    Optionally coerces lat/lon to float (comma->dot) on a copy unless mutate=True.
+    Accepts lat/lon aliases: ["lat","latitude"] and ["lon","longitude","lng"].
+    """
+    if df is None:
+        print(f"[{label}] df is None")
+        return df
+
+    try:
+        print("\n" + "=" * 80)
+        print(f"[MAP DEBUG] {label}")
+        print("=" * 80)
+        print(f"shape: {df.shape}")
+        print(f"columns: {list(df.columns)[:60]}" + (" ..." if len(df.columns) > 60 else ""))
+
+        # region summary (if present)
+        for reg_col in ["region", "region_code", "REGION"]:
+            if reg_col in df.columns:
+                vals = df[reg_col].dropna().astype(str).unique()
+                print(f"unique {reg_col}: {len(vals)} | sample: {list(vals)[:20]}")
+                break
+
+        # station count guess
+        for c in ["station_id", "wmo", "location_id", "name", "station_name"]:
+            if c in df.columns:
+                print(f"unique {c}: {df[c].nunique(dropna=True)}")
+                break
+
+        # resolve lat/lon columns
+        lat_col = next((c for c in ["lat", "latitude"] if c in df.columns), None)
+        lon_col = next((c for c in ["lon", "longitude", "lng"] if c in df.columns), None)
+
+        if not lat_col or not lon_col:
+            print(f"WARNING: lat/lon not found. lat_col={lat_col}, lon_col={lon_col}")
+            return df
+
+        work = df if mutate else df.copy()
+
+        # coerce lat/lon to numeric
+        for c in [lat_col, lon_col]:
+            if work[c].dtype == "object":
+                work[c] = work[c].astype(str).str.replace(",", ".", regex=False)
+            work[c] = pd.to_numeric(work[c], errors="coerce")
+
+        print(f"null {lat_col}: {work[lat_col].isna().sum()} / {len(work)}")
+        print(f"null {lon_col}: {work[lon_col].isna().sum()} / {len(work)}")
+
+        if metric_col:
+            if metric_col in work.columns:
+                print(f"null {metric_col}: {work[metric_col].isna().sum()} / {len(work)}")
+                try:
+                    print(work[metric_col].describe())
+                except Exception:
+                    pass
+            else:
+                print(f"WARNING: metric_col '{metric_col}' not in df.columns")
+
+        # preview
+        if id_cols is None:
+            id_cols = [c for c in ["location_id", "station_id", "wmo", "name"] if c in work.columns]
+        preview_cols = [c for c in (id_cols + [lat_col, lon_col] + ([metric_col] if metric_col and metric_col in work.columns else [])) if c]
+        print("preview cols:", preview_cols)
+        print(work[preview_cols].head(15).to_string(index=False))
+
+        # optional region filter check
+        if region_code:
+            for reg_col in ["region", "region_code", "REGION"]:
+                if reg_col in work.columns:
+                    n = work[work[reg_col].astype(str) == str(region_code)].shape[0]
+                    print(f"rows where {reg_col} == '{region_code}': {n}")
+                    break
+
+        return work
+
+    except Exception as e:
+        print(f"[MAP DEBUG] error while debugging {label}: {e}")
+        return df
+
+
 def _bool_is_cti(idx: pd.DataFrame) -> pd.Series:
     """Robust CTI flag used throughout pairing and exclusions."""
     if idx is None or idx.empty:
@@ -2738,6 +2827,587 @@ def f127__calculate_hours_above_thresholds(
         return pd.DataFrame(columns=["variant", "threshold", "hours"])
     
     return pd.DataFrame(results)
+
+
+# -----------------------------
+# App data helpers (moved from app.py, numbered f13x/f14x/f15x)
+# -----------------------------
+
+def f130__baseline_location_ids(idx: pd.DataFrame, baseline_variant: str) -> set:
+    """Return set of location_id for rows where variant equals baseline_variant."""
+    if idx is None or idx.empty:
+        return set()
+    if "variant" not in idx.columns or "location_id" not in idx.columns:
+        return set()
+    return set(idx[idx["variant"] == baseline_variant]["location_id"].astype(str))
+
+
+def f131__read_parquet_robust(parquet_path: Path, columns: list = None, **kwargs) -> pd.DataFrame:
+    """
+    Robust Parquet reader with multiple fallback strategies.
+    Tries: default PyArrow, use_pandas_metadata=False, read all then filter, fastparquet, PyArrow direct API.
+    """
+    import pyarrow.parquet as pq
+    import pyarrow as pa
+    try:
+        pyarrow_version = pa.__version__
+    except Exception:
+        pyarrow_version = "unknown"
+    errors = []
+    try:
+        return pd.read_parquet(parquet_path, columns=columns, engine="pyarrow", **kwargs)
+    except (OSError, Exception) as e:
+        errors.append(f"1. Default PyArrow: {str(e)}")
+    try:
+        return pd.read_parquet(
+            parquet_path, columns=columns, engine="pyarrow", use_pandas_metadata=False, **kwargs
+        )
+    except (OSError, Exception) as e:
+        errors.append(f"2. PyArrow (no pandas metadata): {str(e)}")
+    try:
+        df = pd.read_parquet(parquet_path, engine="pyarrow", use_pandas_metadata=False, **kwargs)
+        return df[columns] if columns else df
+    except (OSError, Exception) as e:
+        errors.append(f"3. PyArrow (read all, filter): {str(e)}")
+    try:
+        return pd.read_parquet(parquet_path, columns=columns, engine="fastparquet", **kwargs)
+    except ImportError:
+        errors.append("4. fastparquet: not installed")
+    except (OSError, Exception) as e:
+        errors.append(f"4. fastparquet: {str(e)}")
+    try:
+        table = pq.read_table(parquet_path, columns=columns)
+        return table.to_pandas()
+    except (OSError, Exception) as e:
+        errors.append(f"5. PyArrow direct API: {str(e)}")
+    try:
+        table = pq.read_table(parquet_path)
+        df = table.to_pandas()
+        return df[columns] if columns else df
+    except (OSError, Exception) as e:
+        errors.append(f"6. PyArrow direct API (all cols): {str(e)}")
+    raise RuntimeError(
+        f"Failed to read Parquet with multiple strategies. File: {parquet_path}\n"
+        f"PyArrow: {pyarrow_version}\nErrors:\n" + "\n".join(f"  {e}" for e in errors)
+    )
+
+
+def f132__parse_inventory_cols(value) -> List[str]:
+    """Parse semicolon-separated inventory column string into list of scenario names."""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return []
+    return [c.strip() for c in str(value).split(";") if c.strip()]
+
+
+def f133__parse_station_key(station_key: str) -> Tuple[str, str]:
+    """Return (location_name, station_id) from station_key (e.g. 'Name.162270' -> ('Name','162270'))."""
+    key = str(station_key or "").strip()
+    m = re.match(r"^(.*)\.(\d{6})$", key)
+    if m:
+        return m.group(1), m.group(2)
+    return key, key
+
+
+def f134__load_epw_index_meta(index_path: Path) -> Dict[str, dict]:
+    """Load epw_index.json and return dict station_id -> {location_name, latitude, longitude, region}."""
+    if not index_path.exists():
+        return {}
+    try:
+        with open(index_path, "r", encoding="utf-8") as f:
+            records = json.load(f)
+    except Exception:
+        return {}
+    meta = {}
+    for r in records:
+        station_id = str(r.get("station_id") or r.get("wmo") or "").strip()
+        if not station_id:
+            continue
+        meta[station_id] = {
+            "location_name": r.get("location_name"),
+            "latitude": r.get("latitude"),
+            "longitude": r.get("longitude"),
+            "region": r.get("region"),
+        }
+    return meta
+
+
+def f135__normalize_daily_stats_b(daily_stats: pd.DataFrame) -> pd.DataFrame:
+    """Normalize B-route daily stats: station_key, scenario, date -> month/day, DBT_max/DBT_mean, rel_path."""
+    if daily_stats is None or daily_stats.empty:
+        return pd.DataFrame()
+    df = daily_stats.copy()
+    if "station_key" in df.columns:
+        df["station_key"] = df["station_key"].astype(str).str.strip()
+    if "scenario" in df.columns:
+        df["scenario"] = df["scenario"].astype(str).str.strip()
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.dropna(subset=["date"])
+        df["month"] = df["date"].dt.month.astype(int)
+        df["day"] = df["date"].dt.day.astype(int)
+    if "Tmax" in df.columns and "DBT_max" not in df.columns:
+        df = df.rename(columns={"Tmax": "DBT_max"})
+    if "Tmean" in df.columns and "DBT_mean" not in df.columns:
+        df = df.rename(columns={"Tmean": "DBT_mean"})
+    if "station_key" in df.columns and "scenario" in df.columns:
+        df["rel_path"] = df["station_key"].astype(str) + "__" + df["scenario"].astype(str)
+    return df
+
+
+def f136__build_idx_from_inventory(
+    inventory: pd.DataFrame, epw_meta: Dict[str, dict]
+) -> pd.DataFrame:
+    """Build app index DataFrame from B-route inventory and epw_index meta."""
+    if inventory is None or inventory.empty:
+        return pd.DataFrame()
+    inv = inventory.copy()
+    inv["station_key"] = inv["station_key"].astype(str).str.strip()
+    name_col = "station_name" if "station_name" in inv.columns else "location_name" if "location_name" in inv.columns else None
+    lat_col = "latitude" if "latitude" in inv.columns else "lat" if "lat" in inv.columns else None
+    lon_col = "longitude" if "longitude" in inv.columns else "lon" if "lon" in inv.columns else None
+    rows = []
+    for _, r in inv.iterrows():
+        station_key = str(r["station_key"])
+        region = r.get("region")
+        scenarios = f132__parse_inventory_cols(r.get("cols"))
+        if not scenarios:
+            continue
+        for scenario in scenarios:
+            scenario = str(scenario).strip()
+            loc_name, station_id = f133__parse_station_key(station_key)
+            meta = epw_meta.get(str(station_id)) if epw_meta else None
+            rows.append({
+                "station_key": station_key,
+                "location_id": station_id,
+                "location_name": r.get(name_col) if name_col else loc_name,
+                "latitude": r.get(lat_col) if lat_col else (meta or {}).get("latitude", pd.NA),
+                "longitude": r.get(lon_col) if lon_col else (meta or {}).get("longitude", pd.NA),
+                "region": region,
+                "variant": scenario,
+                "group_key": station_key,
+                "rel_path": f"{station_key}__{scenario}",
+                "is_cti": False,
+            })
+    return pd.DataFrame(rows)
+
+
+def f137__normalize_monthly_stats_cti(monthly_stats: pd.DataFrame) -> pd.DataFrame:
+    """Normalize CTI monthly stats: Tmax/Tmean/Tmin -> DBT_*, rel_path."""
+    if monthly_stats is None or monthly_stats.empty:
+        return pd.DataFrame()
+    df = monthly_stats.copy()
+    if "station_key" in df.columns:
+        df["station_key"] = df["station_key"].astype(str).str.strip()
+    if "scenario" in df.columns:
+        df["scenario"] = df["scenario"].astype(str).str.strip()
+    if "month" in df.columns:
+        df["month"] = pd.to_datetime(df["month"].astype(str) + "-01", errors="coerce")
+        df = df.dropna(subset=["month"])
+    if "Tmax" in df.columns and "DBT_max" not in df.columns:
+        df = df.rename(columns={"Tmax": "DBT_max"})
+    if "Tmean" in df.columns and "DBT_mean" not in df.columns:
+        df = df.rename(columns={"Tmean": "DBT_mean"})
+    if "Tmin" in df.columns and "DBT_min" not in df.columns:
+        df = df.rename(columns={"Tmin": "DBT_min"})
+    if "station_key" in df.columns and "scenario" in df.columns:
+        df["rel_path"] = df["station_key"].astype(str) + "__" + df["scenario"].astype(str)
+    return df
+
+
+def f138__normalize_cti_name(value: str) -> str:
+    """Normalize CTI location name for matching (lowercase, strip prefix, alphanumeric)."""
+    s = str(value or "").strip().lower()
+    if s.startswith("ita_") and len(s) > 6:
+        s = re.sub(r"^ita_[a-z]{2}_", "", s)
+    if "__" in s:
+        s = s.split("__", 2)[-1]
+    s = s.replace("_", " ")
+    s = re.sub(r"[\\'\\\"`]", "", s)
+    s = re.sub(r"[^a-z0-9]+", "", s)
+    return s
+
+
+def f139__pick_cti_region(region_value: Any, meta_row: Optional[dict]) -> Optional[str]:
+    """Return 2-letter region code from meta_row or region_value."""
+    def _clean(code: Any) -> Optional[str]:
+        s = str(code or "").strip()
+        if len(s) == 2 and s.isalpha():
+            return s.upper()
+        return None
+    meta_region = _clean(meta_row.get("region") if meta_row is not None else None)
+    if meta_region:
+        return meta_region
+    return _clean(region_value)
+
+
+def f140__build_idx_from_cti_inventory(
+    inventory: pd.DataFrame, cti_list: pd.DataFrame
+) -> pd.DataFrame:
+    """Build app index DataFrame from CTI inventory and CTI list CSV data."""
+    if inventory is None or inventory.empty:
+        return pd.DataFrame()
+    inv = inventory.copy()
+    inv["station_key"] = inv["station_key"].astype(str).str.strip()
+    list_by_id = {}
+    list_by_name = {}
+    list_by_name_norm = {}
+    if cti_list is not None and not cti_list.empty:
+        for _, r in cti_list.iterrows():
+            loc_id = str(r.get("location_id") or "").strip()
+            loc_name = str(r.get("location_name") or "").strip()
+            if loc_id:
+                list_by_id[loc_id] = r
+            if loc_name:
+                list_by_name[loc_name.lower()] = r
+                key = f138__normalize_cti_name(loc_name)
+                if key:
+                    list_by_name_norm[key] = r
+    rows = []
+    for _, r in inv.iterrows():
+        station_key = str(r["station_key"])
+        region = r.get("region")
+        scenarios = f132__parse_inventory_cols(r.get("cols")) or ["cti"]
+        for scenario in scenarios:
+            scenario = str(scenario).strip() or "cti"
+            loc_name, station_id = f133__parse_station_key(station_key)
+            meta = list_by_id.get(station_id) if list_by_id else None
+            if meta is None:
+                meta = list_by_id.get(station_key)
+            if meta is None and loc_name:
+                meta = list_by_name.get(str(loc_name).lower())
+            if meta is None:
+                meta = list_by_name_norm.get(f138__normalize_cti_name(loc_name)) if loc_name else None
+            rows.append({
+                "station_key": station_key,
+                "location_id": station_id,
+                "location_name": (meta.get("location_name") if meta is not None else loc_name) or station_key,
+                "latitude": meta.get("latitude") if meta is not None else pd.NA,
+                "longitude": meta.get("longitude") if meta is not None else pd.NA,
+                "region": f139__pick_cti_region(region, meta),
+                "variant": scenario,
+                "group_key": station_key,
+                "rel_path": f"{station_key}__{scenario}",
+                "is_cti": True,
+            })
+    return pd.DataFrame(rows)
+
+
+def f141__station_hourly_to_long(
+    hourly_wide: pd.DataFrame, station_key: str, scenarios: Optional[List[str]] = None
+) -> pd.DataFrame:
+    """Melt wide hourly DataFrame to long format with rel_path, datetime, DBT."""
+    if hourly_wide is None or hourly_wide.empty:
+        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
+    df = hourly_wide.copy()
+    # Get datetime column: from index or from common column names
+    if isinstance(df.index, pd.DatetimeIndex):
+        df = df.reset_index()
+        # reset_index may produce "index" or the index's name (e.g. "date", "datetime")
+        dt_col = df.columns[0] if len(df.columns) else None
+        if dt_col and dt_col != "datetime":
+            df = df.rename(columns={dt_col: "datetime"})
+    if "datetime" not in df.columns:
+        for cand in ("dt", "date", "time", "timestamp", "index"):
+            if cand in df.columns:
+                df = df.rename(columns={cand: "datetime"})
+                break
+    if "datetime" not in df.columns:
+        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
+    df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+    df = df.dropna(subset=["datetime"])
+    if scenarios:
+        keep_cols = ["datetime"] + [c for c in scenarios if c in df.columns]
+        df = df[keep_cols]
+    skip_cols = {"datetime", "rel_path", "dataset", "region"}
+    value_cols = [c for c in df.columns if c not in skip_cols]
+    if not value_cols:
+        return pd.DataFrame(columns=["rel_path", "datetime", "DBT"])
+    long = df.melt(id_vars=["datetime"], value_vars=value_cols, var_name="scenario", value_name="DBT")
+    long["rel_path"] = str(station_key) + "__" + long["scenario"].astype(str)
+    return long[["rel_path", "datetime", "scenario", "DBT"]]
+
+
+def f142__load_unitr_cti_points(csv_path: Path) -> List[dict]:
+    """Load UNI/TR 10349-2 Tmax reference points from CSV. Returns list of dicts with location, province_sigla, theta_max_C, lat_geocoded, lon_geocoded."""
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception:
+        return []
+    required = ["location", "province_sigla", "theta_max_C", "lat_geocoded", "lon_geocoded"]
+    if not all(c in df.columns for c in required):
+        return []
+    df = df.dropna(subset=["theta_max_C", "lat_geocoded", "lon_geocoded"]).copy()
+    return df[required].to_dict(orient="records")
+
+
+def f143__discover_parquet_files(data_dir: Path) -> List[Tuple[Path, str]]:
+    """Discover .parquet files in data_dir for Data Preview. Returns [(path, display_label), ...]."""
+    if not data_dir.exists():
+        return []
+    files: List[Tuple[Path, str]] = []
+    tables_dir = data_dir / "_tables"
+    if tables_dir.exists():
+        for p in sorted(tables_dir.glob("*.parquet")):
+            name = p.name
+            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
+                files.append((p, f"{name} (daily stats)"))
+            elif name.startswith("D-CTI__DBT__F-MM__L-"):
+                files.append((p, f"{name} (monthly stats)"))
+            elif "Inventory" in name:
+                files.append((p, f"{name} (inventory)"))
+            else:
+                files.append((p, name))
+    for region_dir in sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name != "_tables"]):
+        for p in sorted(region_dir.glob("*.parquet")):
+            files.append((p, f"{region_dir.name}/{p.name} (station hourly)"))
+    for p in sorted(data_dir.glob("*.parquet")):
+        files.append((p, p.name))
+    return files
+
+
+def f144__discover_parquet_files_by_region(data_dir: Path) -> List[Tuple[str, List[Tuple[Path, str]]]]:
+    """Group parquet files by region for Data Preview. Returns [(region_label, [(path, label), ...]), ...]."""
+    if not data_dir.exists():
+        return []
+    by_region: Dict[str, List[Tuple[Path, str]]] = {}
+    tables_dir = data_dir / "_tables"
+    if tables_dir.exists():
+        by_region["Tables"] = []
+        for p in sorted(tables_dir.glob("*.parquet")):
+            name = p.name
+            if name.startswith("D-TMYxFWG__DBT__F-DD__L-") or name.startswith("D-CTI__DBT__F-DD__L-"):
+                by_region["Tables"].append((p, f"{name} (daily stats)"))
+            elif name.startswith("D-CTI__DBT__F-MM__L-"):
+                by_region["Tables"].append((p, f"{name} (monthly stats)"))
+            elif "Inventory" in name:
+                by_region["Tables"].append((p, f"{name} (inventory)"))
+            else:
+                by_region["Tables"].append((p, name))
+    for region_dir in sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name != "_tables"]):
+        region_code = region_dir.name
+        by_region[region_code] = []
+        for p in sorted(region_dir.glob("*.parquet")):
+            by_region[region_code].append((p, f"{p.name} (station hourly)"))
+    for p in sorted(data_dir.glob("*.parquet")):
+        by_region.setdefault("Root", []).append((p, p.name))
+    order = ["Tables"] + sorted(k for k in by_region if k not in ("Tables", "Root")) + (["Root"] if "Root" in by_region else [])
+    return [(r, by_region[r]) for r in order if by_region.get(r)]
+
+
+def f145__load_index_smart(p: Path) -> pd.DataFrame:
+    """Load index from path: if dir use f10b, if epw_index.json missing use parent with f10b, else f110."""
+    if p.exists() and p.is_dir():
+        return f10b__load_index_auto(p)
+    if p.name.lower() == "epw_index.json" and not p.exists():
+        return f10b__load_index_auto(p.parent)
+    return f110__load_index(p)
+
+
+def f146__compute_daily_stats_from_hourly(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Compute daily stats (rel_path, month, day, DBT_mean, DBT_max) from hourly DataFrame."""
+    if hourly.empty:
+        return pd.DataFrame()
+    try:
+        if isinstance(hourly.index, pd.DatetimeIndex):
+            df = hourly.reset_index()
+        else:
+            df = hourly.copy()
+            if "datetime" not in df.columns:
+                if hourly.index.name == "datetime":
+                    df = hourly.reset_index()
+                else:
+                    return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
+        if "rel_path" not in df.columns or "DBT" not in df.columns:
+            return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
+        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+        df = df.dropna(subset=["datetime", "DBT", "rel_path"])
+        if df.empty:
+            return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
+        df["month"] = df["datetime"].dt.month.astype("int8")
+        df["day"] = df["datetime"].dt.day.astype("int8")
+        daily = df.groupby(["rel_path", "month", "day"], as_index=False, observed=True).agg(
+            DBT_mean=("DBT", "mean"),
+            DBT_max=("DBT", "max"),
+        )
+        daily["rel_path"] = daily["rel_path"].astype("category")
+        daily["DBT_mean"] = daily["DBT_mean"].astype("float32")
+        daily["DBT_max"] = daily["DBT_max"].astype("float32")
+        return daily
+    except Exception:
+        return pd.DataFrame(columns=["rel_path", "month", "day", "DBT_mean", "DBT_max"])
+
+
+def f147__filter_cti_points_by_region(cti_points: list, region_code: Optional[str]) -> list:
+    """Return CTI points that fall within the given region code."""
+    if not region_code:
+        return cti_points
+    return [p for p in cti_points if str(p.get("region")) == str(region_code)]
+
+
+def f148__load_regional_hourly_by_rel_paths(
+    rel_paths: list, idx: pd.DataFrame, base_dir: Path
+) -> pd.DataFrame:
+    """Load regional hourly data for given rel_paths by grouping by region and loading only needed files."""
+    if not rel_paths:
+        return pd.DataFrame()
+    rel_path_df = pd.DataFrame({"rel_path": rel_paths})
+    rel_path_df = rel_path_df.merge(
+        idx[["rel_path", "region"]].drop_duplicates(), on="rel_path", how="left"
+    )
+
+    def extract_region(rp: str) -> Optional[str]:
+        match = re.search(r"ITA_([A-Z]{2})_", str(rp).upper())
+        if match:
+            code = match.group(1)
+            if code in ("AB", "BC", "CM", "ER", "FV", "LB", "LG", "LM", "LZ", "MH", "ML", "PM", "PU", "SC", "SD", "TC", "TT", "UM", "VD", "VN"):
+                return code
+        return None
+
+    missing = rel_path_df["region"].isna() | (rel_path_df["region"] == "UNK")
+    if missing.any():
+        for i in rel_path_df[missing].index:
+            ex = extract_region(rel_path_df.loc[i, "rel_path"])
+            if ex:
+                rel_path_df.loc[i, "region"] = ex
+
+    regional_dfs = []
+    processed_regions = set()
+    for region_code in rel_path_df["region"].dropna().unique():
+        if region_code == "UNK" or region_code in processed_regions:
+            continue
+        processed_regions.add(region_code)
+        region_rel_paths = rel_path_df[rel_path_df["region"] == region_code]["rel_path"].tolist()
+        hourly = load_regional_hourly(region_code, base_dir)
+        if not hourly.empty and "rel_path" in hourly.columns:
+            avail = set(hourly["rel_path"].unique())
+            matching = [rp for rp in region_rel_paths if rp in avail]
+            if matching:
+                regional_dfs.append(hourly[hourly["rel_path"].isin(matching)])
+            elif len(avail) > 0:
+                regional_dfs.append(hourly)
+        elif not hourly.empty:
+            regional_dfs.append(hourly)
+
+    missing_rel_paths = rel_path_df[rel_path_df["region"].isna() | (rel_path_df["region"] == "UNK")]["rel_path"].tolist()
+    if missing_rel_paths:
+        for region_code in ["AB", "BC", "CM", "ER", "FV", "LB", "LG", "LM", "LZ", "MH", "ML", "PM", "PU", "SC", "SD", "TC", "TT", "UM", "VD", "VN"]:
+            if region_code in processed_regions:
+                continue
+            hourly = load_regional_hourly(region_code, base_dir)
+            if not hourly.empty and "rel_path" in hourly.columns:
+                avail = set(hourly["rel_path"].unique())
+                found = [rp for rp in missing_rel_paths if rp in avail]
+                if found:
+                    regional_dfs.append(hourly[hourly["rel_path"].isin(found)])
+                    processed_regions.add(region_code)
+
+    if not regional_dfs:
+        return pd.DataFrame()
+    return pd.concat(regional_dfs, axis=0).sort_index()
+
+
+def f149__file_stats_from_precomputed_or_daily(
+    precomputed_path: Path, daily_stats: pd.DataFrame, percentile: float
+) -> pd.DataFrame:
+    """Load precomputed file stats if path exists, else compute via f123. No cache/timing."""
+    if precomputed_path.exists():
+        try:
+            file_stats_all = pd.read_parquet(precomputed_path)
+            if "percentile" in file_stats_all.columns:
+                fs = file_stats_all[file_stats_all["percentile"] == percentile].copy()
+                if not fs.empty:
+                    return fs.drop(columns=["percentile"])
+            else:
+                return file_stats_all.copy()
+        except Exception:
+            pass
+    return f123__build_file_stats_from_daily(daily_stats, percentile)
+
+
+def f150__location_deltas_from_precomputed_or_daily(
+    precomputed_path: Path,
+    daily_stats: pd.DataFrame,
+    idx: pd.DataFrame,
+    baseline_variant: str,
+    compare_variant: str,
+    percentile: float,
+) -> pd.DataFrame:
+    """Load precomputed location deltas if path exists, else compute via f125. No cache/timing."""
+    if precomputed_path.exists():
+        try:
+            deltas_all = pd.read_parquet(precomputed_path)
+            pct_dec = float(percentile) / 100.0
+            delta_df = deltas_all[
+                (deltas_all["baseline_variant"] == baseline_variant)
+                & (deltas_all["compare_variant"] == compare_variant)
+                & (deltas_all["percentile"] == pct_dec)
+            ].copy()
+            if not delta_df.empty:
+                return delta_df.drop(columns=["baseline_variant", "compare_variant", "percentile"])
+        except Exception:
+            pass
+    return f125__compute_location_deltas_from_daily(
+        daily_stats, idx,
+        baseline_variant=baseline_variant,
+        compare_variant=compare_variant,
+        percentile=float(percentile),
+    )
+
+
+def f151__location_stats_from_precomputed_or_compute(
+    precomputed_path: Path,
+    variant: str,
+    percentile: float,
+    daily_stats: pd.DataFrame,
+    idx: pd.DataFrame,
+) -> pd.DataFrame:
+    """Load precomputed location stats if path exists, else compute via f28b. No cache/timing."""
+    if precomputed_path.exists():
+        try:
+            stats_all = pd.read_parquet(precomputed_path)
+            stats_df = stats_all[
+                (stats_all["variant"] == variant) & (stats_all["percentile"] == percentile)
+            ].copy()
+            if not stats_df.empty:
+                return stats_df.drop(columns=["variant", "percentile"])
+        except Exception:
+            pass
+    return f28b__compute_location_stats_for_variant_from_daily(
+        daily_stats, idx, variant=variant, percentile=percentile
+    )
+
+
+def f152__monthly_delta_from_precomputed_or_compute(
+    precomputed_path: Path,
+    baseline_variant: str,
+    compare_variant: str,
+    percentile: float,
+    metric_key: str,
+    daily_stats: pd.DataFrame,
+    idx: pd.DataFrame,
+) -> pd.DataFrame:
+    """Load precomputed monthly delta table if path exists, else compute via f124. No cache/timing."""
+    if precomputed_path.exists():
+        try:
+            tables_all = pd.read_parquet(precomputed_path)
+            pct_dec = float(percentile) / 100.0
+            table_df = tables_all[
+                (tables_all["baseline_variant"] == baseline_variant)
+                & (tables_all["compare_variant"] == compare_variant)
+                & (tables_all["percentile"] == pct_dec)
+                & (tables_all["metric_key"] == metric_key)
+            ].copy()
+            if not table_df.empty:
+                return table_df.drop(columns=["baseline_variant", "compare_variant", "percentile", "metric_key"])
+        except Exception:
+            pass
+    return f124__build_monthly_delta_table(
+        daily_stats, idx,
+        baseline_variant=baseline_variant,
+        compare_variant=compare_variant,
+        percentile=float(percentile) / 100.0,
+        metric_key=metric_key,
+    )
 
 
 def f002__custom_hr(margin_top: float = 0.5, margin_bottom: float = 0.5) -> None:
