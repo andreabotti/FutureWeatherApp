@@ -1,6 +1,7 @@
 
 import json
 import re
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -39,6 +40,72 @@ def _ensure_lat_lon_columns(idx: pd.DataFrame) -> pd.DataFrame:
         idx["lon"] = idx["longitude"]
 
     return idx
+
+
+def debug_data_sanity(base_dir: Path, region: str | None = None) -> Dict[str, Any]:
+    """
+    Lightweight data sanity helper for deployed apps (metrics disappearing, empty cards, etc.).
+
+    Checks that the expected base directory, _tables folder, index and key parquet tables exist,
+    and returns basic metadata (paths, counts, shapes/columns) as a dict that can be shown via
+    st.json() inside an expander.
+
+    NOTE: Uses only stdlib + pandas (no heavy recursion: just glob(\"*.parquet\") in _tables/ and region/).
+    """
+    base_dir = Path(base_dir)
+    tables_dir = base_dir / "_tables"
+    region_dir = (base_dir / region) if region else None
+
+    def _exists(p: Path | None) -> bool:
+        if p is None:
+            return False
+        try:
+            return p.exists()
+        except Exception:
+            return False
+
+    index_path = base_dir / "D-TMY__epw_index.json"
+    # Updated to match current naming convention in _tables (D-TMYxFWG__*.parquet)
+    locstats_path = tables_dir / "D-TMYxFWG__LocationStats__P-99.parquet"
+    filestats_path = tables_dir / "D-TMYxFWG__FileStats__P-99.parquet"
+
+    out: Dict[str, Any] = {
+        "cwd": os.getcwd(),
+        "__file__": __file__,
+        "base_dir": str(base_dir),
+        "tables_dir": str(tables_dir),
+        "tables_dir_exists": _exists(tables_dir),
+        "index_file": str(index_path),
+        "index_exists": _exists(index_path),
+        "locstats_file": str(locstats_path),
+        "locstats_exists": _exists(locstats_path),
+        "filestats_file": str(filestats_path),
+        "filestats_exists": _exists(filestats_path),
+        "tables_parquet_count": len(list(tables_dir.glob("*.parquet"))) if _exists(tables_dir) else 0,
+        "region": region,
+        "region_dir": str(region_dir) if region_dir else None,
+        "region_dir_exists": _exists(region_dir) if region_dir else None,
+        "region_parquet_count": len(list(region_dir.glob("*.parquet"))) if region_dir and _exists(region_dir) else None,
+    }
+
+    # Light reads (only if present)
+    if out["locstats_exists"]:
+        try:
+            df = pd.read_parquet(out["locstats_file"])
+            out["locstats_shape"] = df.shape
+            out["locstats_cols"] = list(df.columns)[:30]
+        except Exception as e:  # pragma: no cover - debug only
+            out["locstats_error"] = str(e)
+
+    if out["filestats_exists"]:
+        try:
+            df = pd.read_parquet(out["filestats_file"])
+            out["filestats_shape"] = df.shape
+            out["filestats_cols"] = list(df.columns)[:30]
+        except Exception as e:  # pragma: no cover - debug only
+            out["filestats_error"] = str(e)
+
+    return out
 
 
 def debug_map_df(
@@ -450,7 +517,7 @@ def f108__normalize_group_key(group: Any, filename: str) -> str:
 # -----------------------------
 # Data loading / processing
 # -----------------------------
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f109__load_index_records(index_path: Path) -> list[dict]:
     with open(index_path, "r", encoding="utf-8") as f:
         records = json.load(f)
@@ -459,7 +526,7 @@ def f109__load_index_records(index_path: Path) -> list[dict]:
     return records
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f09b__discover_index_paths(base_dir: Path) -> list[Path]:
     """
     New naming:
@@ -477,7 +544,7 @@ def f09b__discover_index_paths(base_dir: Path) -> list[Path]:
     return paths
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f10b__load_index_auto(base_dir: Path) -> pd.DataFrame:
     """
     Load index from either legacy epw_index.json or new per-dataset D-*__epw_index.json,
@@ -531,7 +598,7 @@ def f10b__load_index_auto(base_dir: Path) -> pd.DataFrame:
     return idx
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f110__load_index(index_path: Path) -> pd.DataFrame:
     records = f109__load_index_records(index_path)
     idx = pd.DataFrame(records)
@@ -570,7 +637,7 @@ def f110__load_index(index_path: Path) -> pd.DataFrame:
     return idx
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def load_regional_hourly(region_code: str, base_dir: Path, dataset: str | None = None) -> pd.DataFrame:
     """
     Load regional hourly DBT data.
@@ -758,12 +825,12 @@ def f112__postprocess_tidy_parquet(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f113__build_file_stats(tidy: pd.DataFrame) -> pd.DataFrame:
     return tidy.groupby("rel_path", as_index=False)["DBT"].agg(Tmax="max", Tavg="mean")
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f123__build_file_stats_from_daily(daily_stats: pd.DataFrame, percentile: float) -> pd.DataFrame:
     """
     Build per-file stats from daily aggregates.
@@ -1383,6 +1450,7 @@ def f28bh__compute_location_stats_for_variant_from_hourly(
     return out
 
 
+@st.cache_data(show_spinner=True)
 def f28b__compute_location_stats_for_variant_from_daily(
     daily_stats: pd.DataFrame,
     idx: pd.DataFrame,
@@ -1461,6 +1529,7 @@ def f28b__compute_location_stats_for_variant_from_daily(
     return out
 
 
+@st.cache_data(show_spinner=True)
 def f28c__compute_location_stats_cti_from_daily(
     daily_stats: pd.DataFrame,
     idx: pd.DataFrame,
@@ -1983,7 +2052,7 @@ def f116__baseline_group_for_location(idx: pd.DataFrame, location_id: str, basel
     return None
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f117__location_timeseries_for_variant(
     tidy: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2052,7 +2121,7 @@ def f118__build_location_scatter_df(
 # -----------------------------
 # Fast per-click charts: pre-aggregated daily stats
 # -----------------------------
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f121__daily_stats_by_rel_path(tidy_parquet_path: str) -> pd.DataFrame:
     """
     Pre-aggregate the huge hourly parquet into a compact daily table.
@@ -2183,13 +2252,14 @@ from libs.fn__libs_charts import (
     f211__plotly_tmyx_heatmap_subplots as f34__plotly_tmyx_heatmap_subplots,
     f212__plotly_tmyx_scatter_subplots as f35__plotly_tmyx_scatter_subplots,
     f213__plotly_tmyx_stacked_subplots as f36__plotly_tmyx_stacked_subplots,
+    geo_inline_script,
 )
 
 
 # -----------------------------
 # D3/JS embedded dashboard data
 # -----------------------------
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f119__build_month_hour_profiles(
     tidy: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2271,7 +2341,7 @@ def f119__build_month_hour_profiles(
     return {"keys": [[m, h] for (m, h) in keys], "profiles": profiles}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f120__build_daily_db_profiles(
     tidy: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2365,7 +2435,7 @@ def f120__build_daily_db_profiles(
     return {"keys": [[m, d] for (m, d) in keys], "profiles": profiles}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f22c__build_daily_db_profiles_single_variant(
     tidy: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2460,7 +2530,7 @@ def f22c__build_daily_db_profiles_single_variant(
     return {"keys": [[m, d] for (m, d) in keys], "profiles": profiles}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f22d__build_daily_db_profiles_from_daily_stats(
     daily_stats: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2531,20 +2601,25 @@ def f22d__build_daily_db_profiles_from_daily_stats(
             "comp": [None] * len(keys),
         }
 
-    for _, r in daily.iterrows():
-        loc = str(r["location_id"])
-        role = str(r["role"])
-        k = (int(r["month"]), int(r["day"]))
-        j = key_index.get(k)
-        if j is None or loc not in profiles:
+    daily["_doy"] = daily.apply(
+        lambda r: key_index.get((int(r["month"]), int(r["day"]))), axis=1
+    )
+    daily = daily.dropna(subset=["_doy"])
+    daily["_doy"] = daily["_doy"].astype(int)
+
+    for (loc, role), grp in daily.groupby(["location_id", "role"], observed=True):
+        loc = str(loc)
+        role = str(role)
+        if loc not in profiles or role not in ("base", "comp"):
             continue
-        v = None if pd.isna(r["DBT"]) else float(round(r["DBT"], 3))
-        profiles[loc][role][j] = v
+        arr = profiles[loc][role]
+        for doy, val in zip(grp["_doy"], grp["DBT"]):
+            arr[doy] = None if pd.isna(val) else round(float(val), 3)
 
     return {"keys": [[m, d] for (m, d) in keys], "profiles": profiles}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=True)
 def f22e__build_daily_db_profiles_single_variant_from_daily_stats(
     daily_stats: pd.DataFrame,
     idx: pd.DataFrame,
@@ -2612,14 +2687,19 @@ def f22e__build_daily_db_profiles_single_variant_from_daily_stats(
             "series": [None] * len(keys),
         }
 
-    for _, r in daily.iterrows():
-        loc = str(r["location_id"])
-        k = (int(r["month"]), int(r["day"]))
-        j = key_index.get(k)
-        if j is None or loc not in profiles:
+    daily["_doy"] = daily.apply(
+        lambda r: key_index.get((int(r["month"]), int(r["day"]))), axis=1
+    )
+    daily = daily.dropna(subset=["_doy"])
+    daily["_doy"] = daily["_doy"].astype(int)
+
+    for loc, grp in daily.groupby("location_id", observed=True):
+        loc = str(loc)
+        if loc not in profiles:
             continue
-        v = None if pd.isna(r["DBT"]) else float(round(r["DBT"], 3))
-        profiles[loc]["series"][j] = v
+        arr = profiles[loc]["series"]
+        for doy, val in zip(grp["_doy"], grp["DBT"]):
+            arr[doy] = None if pd.isna(val) else round(float(val), 3)
 
     return {"keys": [[m, d] for (m, d) in keys], "profiles": profiles}
 
@@ -2660,16 +2740,24 @@ def load_daily_profiles_abs_precomputed(
     profiles = {}
     for loc in locs:
         profiles[loc] = {"name": loc, "series": [None] * key_len}
-    for _, r in df.iterrows():
-        loc = str(r["location_id"])
+    df["_doy0"] = df["day_of_year"].astype(int) - 1
+    if name_col:
+        name_map = (
+            df.groupby("location_id")[name_col].first().astype(str).to_dict()
+        )
+        for loc, name in name_map.items():
+            loc = str(loc)
+            if loc in profiles:
+                profiles[loc]["name"] = name
+
+    for loc, grp in df.groupby("location_id", observed=True):
+        loc = str(loc)
         if loc not in profiles:
             continue
-        if name_col and name_col in r:
-            profiles[loc]["name"] = str(r[name_col])
-        doy = int(r["day_of_year"])
-        if 1 <= doy <= key_len:
-            val = r.get("DBT")
-            profiles[loc]["series"][doy - 1] = None if pd.isna(val) else round(float(val), 3)
+        arr = profiles[loc]["series"]
+        for doy0, val in zip(grp["_doy0"], grp["DBT"]):
+            if 0 <= doy0 < key_len:
+                arr[doy0] = None if pd.isna(val) else round(float(val), 3)
     return {"keys": keys, "profiles": profiles}
 
 
@@ -2713,19 +2801,25 @@ def load_daily_profiles_delta_precomputed(
     profiles = {}
     for loc in locs:
         profiles[loc] = {"name": loc, "base": [None] * key_len, "comp": [None] * key_len}
-    for _, r in df.iterrows():
-        loc = str(r["location_id"])
+    df["_doy0"] = df["day_of_year"].astype(int) - 1
+    if name_col:
+        name_map = (
+            df.groupby("location_id")[name_col].first().astype(str).to_dict()
+        )
+        for loc, name in name_map.items():
+            loc = str(loc)
+            if loc in profiles:
+                profiles[loc]["name"] = name
+
+    valid = df[df["role"].isin(["base", "comp"])].copy()
+    for (loc, role), grp in valid.groupby(["location_id", "role"], observed=True):
+        loc = str(loc)
         if loc not in profiles:
             continue
-        if name_col and name_col in r:
-            profiles[loc]["name"] = str(r[name_col])
-        role = str(r.get("role", ""))
-        if role not in ("base", "comp"):
-            continue
-        doy = int(r["day_of_year"])
-        if 1 <= doy <= key_len:
-            val = r.get("DBT")
-            profiles[loc][role][doy - 1] = None if pd.isna(val) else round(float(val), 3)
+        arr = profiles[loc][role]
+        for doy0, val in zip(grp["_doy0"], grp["DBT"]):
+            if 0 <= doy0 < key_len:
+                arr[doy0] = None if pd.isna(val) else round(float(val), 3)
     return {"keys": keys, "profiles": profiles}
 
 

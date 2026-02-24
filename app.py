@@ -7,17 +7,13 @@ import altair as alt
 import streamlit.components.v1 as components
 import json
 import time
-import importlib
 import plotly.graph_objects as go
 import libs.fn__libs as h
 from libs.fn__libs_bilingual import label
 from libs.fn__page_header import f001__create_page_header
-from libs.fn__page_welcome import render_welcome_page
 
-# Ensure Streamlit uses the latest local fn__libs.py and fn__libs_charts (avoids stale module issues)
 import libs.fn__libs_charts as _fn_charts
-importlib.reload(_fn_charts)
-h = importlib.reload(h)
+
 h.f101__inject_inter_font()
 h.f102__enable_altair_inter_theme()
 
@@ -144,6 +140,16 @@ DEFAULT_INDEX_PATH = DEFAULT_DATA_DIR
 DEFAULT_TIDY_PARQUET = DEFAULT_DATA_DIR / "dbt_rh_tidy.parquet"
 DEFAULT_TMYX_HOURLY_PARQUET = DEFAULT_DATA_DIR / "tmyx_hourly.parquet"
 
+# Precomputed Italy GeoJSON — produced by 06E_precompute_geodata.py
+# Falls back to network fetch if files not present.
+GEO_DIR = SCRIPT_DIR / "data" / "geo"
+_GEO_SCRIPT = h.geo_inline_script(str(GEO_DIR))
+
+# Variants shown in maps, delta tables, and Italian Regions view (sidebar + charts).
+# Dated TMYx variants are excluded from these views; they remain visible in the TMYx station tab only.
+MAP_BASELINE_VARIANT = "tmyx"
+DATED_TMYX_VARIANTS: set[str] = {"tmyx_2004-2018", "tmyx_2007-2021", "tmyx_2009-2023"}
+
 
 @st.cache_data(show_spinner=False)
 def _load_unitr_cti_points(csv_path: Path) -> list[dict]:
@@ -156,6 +162,160 @@ def _discover_parquet_files(data_dir: Path) -> list[tuple[Path, str]]:
 
 def _discover_parquet_files_by_region(data_dir: Path) -> list[tuple[str, list[tuple[Path, str]]]]:
     return h.f144__discover_parquet_files_by_region(data_dir)
+
+
+@st.cache_data(show_spinner=False)
+def _series_from_sub(sub: pd.DataFrame) -> list[dict]:
+    """Vectorized replacement for the iterrows-based hourly series builder."""
+    sub = sub.dropna(subset=["DBT"]).copy()
+    if sub.empty:
+        return []
+    dts = sub["datetime"]
+    ts = dts.apply(lambda d: d.isoformat() if hasattr(d, "isoformat") else str(d)).tolist()
+    vs = sub["DBT"].astype(float).tolist()
+    return [{"t": t, "v": v} for t, v in zip(ts, vs)]
+
+
+def _build_hourly_series_by_location_id(
+    base_dir: Path,
+    by_region: list,
+    region_stem_to_loc_items: tuple,
+    max_stations: int = 12,
+) -> dict:
+    """
+    Build hourly_series_by_location_id from station parquet files.
+    Cached to avoid re-reading parquet files on every Streamlit rerun.
+    region_stem_to_loc_items: tuple of ((region, stem), location_id) for stable cache key.
+    """
+    region_stem_to_loc = dict(region_stem_to_loc_items)
+    hourly_series_by_location_id: dict = {}
+    loaded_count = 0
+    for region_label, region_files in by_region:
+        if region_label in ("Tables", "Root") or loaded_count >= max_stations:
+            continue
+        region_code = region_label
+        for path, file_label in region_files:
+            if "hourly" not in file_label.lower() or not path.exists():
+                continue
+            stem = path.stem
+            if not stem:
+                continue
+            loc_id = region_stem_to_loc.get((region_code, stem))
+            if loc_id is None:
+                loc_id = region_stem_to_loc.get((str(region_code).strip(), str(stem).strip()))
+            if loc_id is None or loc_id in hourly_series_by_location_id:
+                continue
+            try:
+                hourly_wide = _read_parquet_robust(path)
+            except Exception:
+                continue
+            if hourly_wide is None or hourly_wide.empty:
+                continue
+            long_hourly = _station_hourly_to_long(hourly_wide, stem, scenarios=None)
+            if long_hourly.empty or "datetime" not in long_hourly.columns or "DBT" not in long_hourly.columns:
+                continue
+            hourly_series_by_location_id[loc_id] = {}
+            long_hourly["_month"] = pd.to_datetime(long_hourly["datetime"], errors="coerce").dt.month
+            summer = long_hourly[long_hourly["_month"].isin([6, 7, 8])]
+            for sc in long_hourly["scenario"].dropna().unique().tolist():
+                sc_str = str(sc).strip()
+                if not sc_str:
+                    continue
+                sub = summer[summer["scenario"] == sc]
+                series = _series_from_sub(sub)
+                hourly_series_by_location_id[loc_id][sc_str] = series
+            for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
+                if alias_from in hourly_series_by_location_id[loc_id] and alias_to not in hourly_series_by_location_id[loc_id]:
+                    hourly_series_by_location_id[loc_id][alias_to] = hourly_series_by_location_id[loc_id][alias_from]
+            loaded_count += 1
+            if loaded_count >= max_stations:
+                break
+        if loaded_count >= max_stations:
+            break
+    return hourly_series_by_location_id
+
+
+@st.cache_data(show_spinner=False)
+def _build_region_maps_html(
+    baseline_variants_key: tuple,
+    compare_variant: str,
+    metric_key: str,
+    percentile: float,
+    ui_lang: str,
+    # Fingerprints (small strings) used for cache key; actual data passed as _-prefixed args
+    abs_fp: str,
+    profiles_fp: str,
+    future_abs_fp: str,
+    region_options_fp: str,
+    unitr_fp: str,
+    hourly_fp: str,
+    selected_location_id: str | None,
+    dashboard_cols: str,
+    maps_row_gap_px: int,
+    maps_row3_gap_px: int,
+    thermo_separator_gap_px: int,
+    divider_margin_bottom_px: int,
+    # Actual data, excluded from Streamlit cache-key hash (underscore prefix)
+    _abs_points_json: str = "{}",
+    _profiles_json: str = "{}",
+    _future_abs_json: str = "{}",
+    _region_options_json: str = "[]",
+    _unitr_points_json: str = "[]",
+    _hourly_json: str = "{}",
+    _geo_script: str = "",   # excluded from cache key (underscore prefix)
+) -> str:
+    import json as _json
+    abs_points_by_variant = _json.loads(_abs_points_json)
+    profiles_bundle_by_variant = _json.loads(_profiles_json)
+    future_abs_points_by_variant = _json.loads(_future_abs_json)
+    region_options_data = _json.loads(_region_options_json)
+    unitr_points = _json.loads(_unitr_points_json)
+    hourly_series_by_location_id = _json.loads(_hourly_json)
+    font_theme = {
+        "enabled": True,
+        "font_family": '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif',
+        "fs_title": 18,
+        "fs_subtitle": 15,
+        "fs_label": 10,
+        "fs_small": 10,
+        "fs_axis": 11,
+    }
+    return h.f23d__d3_region_maps_html(
+        baseline_variants=list(baseline_variants_key),
+        abs_points_by_variant=abs_points_by_variant,
+        delta_points_by_variant={},
+        metric_key=metric_key,
+        compare_variant=compare_variant,
+        percentile=percentile,
+        region_options=region_options_data,
+        future_abs_points_by_variant=future_abs_points_by_variant or None,
+        initial_region=None,
+        click_callback_key="single_regions_location_click_v2",
+        profiles_bundle_by_variant=profiles_bundle_by_variant or None,
+        unitr_points=unitr_points,
+        font_theme=font_theme,
+        hide_region_selector=False,
+        layout_mode="columns",
+        cti_on_top=True,
+        hide_row2=True,
+        side_text_html=(
+            "<b>Temperature Summary</b><br/>"
+            "• Tmax uses selected percentile<br/>"
+            "• Tavg is mean of daily means<br/>"
+            "• Click a marker to update charts"
+        ),
+        dashboard_cols=dashboard_cols,
+        maps_row_gap_px=maps_row_gap_px,
+        maps_row3_gap_px=maps_row3_gap_px,
+        thermo_separator_gap_px=thermo_separator_gap_px,
+        divider_margin_bottom_px=divider_margin_bottom_px,
+        ui_lang=ui_lang,
+        hourly_series_by_variant=None,
+        initial_selected_location_id=selected_location_id,
+        hourly_series_by_location_id=hourly_series_by_location_id or None,
+        geo_script=_geo_script,
+    )
+
 
 # CTI (Itaca) weather stations (hourly DBT) - copy CSVs into this folder for Single Regions Data integration
 DEFAULT_CTI_DIR = SCRIPT_DIR / "data" / "cti"
@@ -525,6 +685,11 @@ if not present_variants:
     st.warning("No baseline (TMYx) variants found in inventory.")
     st.stop()
 
+# present_variants_map: only "tmyx" (and any non-dated present variants).
+# Used for sidebar, maps, delta, Italian Regions. Does NOT affect the TMYx station tab.
+present_variants_map = [v for v in present_variants if v not in DATED_TMYX_VARIANTS]
+if not present_variants_map:
+    present_variants_map = present_variants  # safety fallback
 
 # Sidebar controls (all radio/select widgets)
 future_tags_by_baseline: dict[str, list[str]] = {}
@@ -532,6 +697,8 @@ for scenario in all_scenarios:
     if "__" not in scenario:
         continue
     base, tag = scenario.split("__", 1)
+    if base in DATED_TMYX_VARIANTS:
+        continue  # suppress dated-baseline futures from sidebar
     future_tags_by_baseline.setdefault(base, set()).add(tag)
 future_tags_by_baseline = {k: sorted(list(v)) for k, v in future_tags_by_baseline.items()}
 
@@ -540,10 +707,10 @@ with st.sidebar:
 
     default_baseline = "tmyx_2009-2023"
     default_baseline = "tmyx"
-    default_idx = present_variants.index(default_baseline) if default_baseline in present_variants else 0
+    default_idx = present_variants_map.index(default_baseline) if default_baseline in present_variants_map else 0
     baseline_variant = st.radio(
         label("current_climate_baseline"),
-        options=present_variants,
+        options=present_variants_map,
         index=default_idx,
         help="These are the present files that were morphed (TMYx + optional time-window variants).",
     )
@@ -675,18 +842,6 @@ if delta_df.empty:
         "3. Clear Streamlit cache and restart the app."
     )
 
-top_tabs = st.tabs(
-    [
-        label("welcome"),
-        label("future_weather_scenarios"),
-        "Data & Code Debug",
-    ]
-)
-
-with top_tabs[0]:
-    render_welcome_page()
-
-
 def _render_cti_scenario_tab() -> None:
     abs_key = "Tmax" if metric_key == "dTmax" else "Tavg"
     if cti_daily_stats is None or cti_daily_stats.empty or cti_idx is None or cti_idx.empty:
@@ -736,6 +891,7 @@ def _render_cti_scenario_tab() -> None:
                 height=650,
                 scenario_variant="cti",
                 percentile=float(percentile),
+                geo_script=_GEO_SCRIPT,
             ),
             notes="Generates D3 dashboard HTML for CTI scenario.",
         )
@@ -873,74 +1029,12 @@ def _render_future_scenario_tab() -> None:
                                 height=650,
                                 scenario_variant=compare_variant,
                                 percentile=float(percentile),
+                                geo_script=_GEO_SCRIPT,
                             ),
                             notes="Generates D3 dashboard HTML for absolute scenario.",
                         )
                         components.html(html, height=1150, scrolling=False)
 
-                with charts_col:
-                    st.markdown("##### Charts")
-                    selected = st.session_state.get("selected_point_abs")
-                    if selected and isinstance(selected, dict) and selected.get("location_id"):
-                        loc_id = str(selected.get("location_id"))
-                        loc_name = selected.get("location_name") or loc_id
-                        v = str(selected.get("variant") or compare_variant)
-
-                        st.caption(f"Location: **{loc_name}** (`{loc_id}`) — scenario `{v}`")
-
-                        stat = "max" if metric_key == "dTmax" else "mean"
-                        daily_one = h.f25b__build_location_daily_for_variant(
-                            daily_stats,
-                            idx,
-                            location_id=loc_id,
-                            variant=v,
-                            stat=stat,
-                        )
-                        if daily_one.empty:
-                            st.warning("No daily rows found for this location/scenario.")
-                        else:
-                            # Summer time series (Jul–Aug): scenario only
-                            summer = daily_one[daily_one["month"].isin([7, 8])].copy()
-                            line = (
-                                alt.Chart(summer)
-                                .mark_line()
-                                .encode(
-                                    x=alt.X("date:T", title="Date (Jul–Aug)"),
-                                    y=alt.Y("DBT:Q", title=f"{abs_key} (°C)"),
-                                    tooltip=[alt.Tooltip("date:T"), alt.Tooltip("DBT:Q", format=".2f")],
-                                )
-                                .properties(height=260)
-                                .interactive()
-                            )
-                            st.altair_chart(line, width="stretch")
-
-                            # Monthly absolute summary
-                            if metric_key == "dTmax":
-                                month_agg = (
-                                    alt.Chart(daily_one)
-                                    .mark_bar()
-                                    .encode(
-                                        x=alt.X("month:O", title="Month"),
-                                        y=alt.Y("quantile(DBT, 0.99):Q", title=f"{abs_key} (°C)"),
-                                        tooltip=[alt.Tooltip("quantile(DBT, 0.99):Q", format=".2f")],
-                                    )
-                                    .properties(height=220)
-                                )
-                            else:
-                                month_agg = (
-                                    alt.Chart(daily_one)
-                                    .mark_bar()
-                                    .encode(
-                                        x=alt.X("month:O", title="Month"),
-                                        y=alt.Y("mean(DBT):Q", title=f"{abs_key} (°C)"),
-                                        tooltip=[alt.Tooltip("mean(DBT):Q", format=".2f")],
-                                    )
-                                    .properties(height=220)
-                                )
-                            st.altair_chart(month_agg, width="stretch")
-                    else:
-                        st.info("Click a map marker to see location charts.")
-            
                 with charts_col:
                     st.markdown("##### Charts")
                     selected = st.session_state.get("selected_point_abs")
@@ -1065,6 +1159,7 @@ def _render_future_scenario_tab() -> None:
                             height=650,
                             scenario_variant=compare_variant,
                             percentile=float(percentile),
+                            geo_script=_GEO_SCRIPT,
                         ),
                         notes="Generates D3 dashboard HTML for absolute scenario.",
                     )
@@ -1267,6 +1362,7 @@ def _render_future_delta_tab() -> None:
                                 baseline_variant=baseline_variant_future,
                         compare_variant=compare_variant,
                         percentile=float(percentile),
+                        geo_script=_GEO_SCRIPT,
                     ),
                     notes="Generates D3 dashboard HTML for delta comparison.",
                 )
@@ -1299,7 +1395,7 @@ def _render_future_delta_tab() -> None:
             st.dataframe(display_table, width="stretch", height=720, hide_index=True)
 
 
-with top_tabs[1]:
+def _run_scenarios_page():
     scenario_tabs = st.tabs([
         label("future_temperatures_italy"),
         label("future_vs_current_temperatures_italy"),
@@ -1407,8 +1503,8 @@ with top_tabs[1]:
                 )
                 abs_points_by_variant = {}
                 abs_key = "Tmax" if metric_key == "dTmax" else "Tavg"
-                if present_variants and not daily_stats.empty and not idx.empty:
-                    for v in present_variants:
+                if present_variants_map and not daily_stats.empty and not idx.empty:
+                    for v in present_variants_map:
                         abs_df = h.f28b__compute_location_stats_for_variant_from_daily(
                             daily_stats,
                             idx,
@@ -1445,8 +1541,8 @@ with top_tabs[1]:
                 # Use sidebar baseline so region maps match "Proiezioni Temperature Future" and "Temperature Correnti vs Future"
                 base_for_default = (
                     baseline_variant_future
-                    if baseline_variant_future in present_variants
-                    else ("tmyx" if "tmyx" in present_variants else present_variants[0])
+                    if baseline_variant_future in present_variants_map
+                    else ("tmyx" if "tmyx" in present_variants_map else present_variants_map[0])
                 )
                 future_scenarios = [f"{base_for_default}__rcp45_2050", f"{base_for_default}__rcp85_2080"]
                 future_abs_points_by_variant = {}
@@ -1504,13 +1600,6 @@ with top_tabs[1]:
                             if profiles:
                                 profiles_bundle_by_variant[scenario] = profiles
 
-                side_text_html = (
-                    "<b>Temperature Summary</b><br/>"
-                    "• Tmax uses selected percentile<br/>"
-                    "• Tavg is mean of daily means<br/>"
-                    "• Click a marker to update charts"
-                )
-
                 unitr_points: list[dict] = []
                 if UNITR_CTI_CSV.exists():
                     unitr_points = _load_unitr_cti_points(UNITR_CTI_CSV)
@@ -1535,63 +1624,25 @@ with top_tabs[1]:
                         if len(loc_ids_to_load) >= MAX_HOURLY_STATIONS:
                             break
 
-                # Primary path: discover station hourly parquets the same way as Data Preview, match by file stem to location_id
+                # Primary path: discover station hourly parquets (cached)
                 by_region = _discover_parquet_files_by_region(DEFAULT_B_DATA_DIR)
-                loaded_count = 0
-                for region_label, region_files in by_region:
-                    if region_label in ("Tables", "Root") or loaded_count >= MAX_HOURLY_STATIONS:
-                        continue
-                    region_code = region_label
-                    for path, file_label in region_files:
-                        if "hourly" not in file_label.lower() or not path.exists():
-                            continue
-                        stem = path.stem
-                        if not stem:
-                            continue
-                        # Match file to location: idx row where region matches and (station_key or location_id) matches stem
-                        loc_rows = idx[
-                            (idx["region"].astype(str).str.strip() == str(region_code).strip())
-                            & (
-                                (idx["station_key"].astype(str).str.strip() == stem)
-                                | (idx["location_id"].astype(str).str.strip() == stem)
-                            )
-                        ]
-                        if loc_rows.empty:
-                            continue
-                        loc_id = str(loc_rows.iloc[0]["location_id"]).strip()
-                        if loc_id in hourly_series_by_location_id:
-                            continue
-                        try:
-                            hourly_wide = _read_parquet_robust(path)
-                        except Exception:
-                            continue
-                        if hourly_wide is None or hourly_wide.empty:
-                            continue
-                        long_hourly = _station_hourly_to_long(hourly_wide, stem, scenarios=None)
-                        if long_hourly.empty or "datetime" not in long_hourly.columns or "DBT" not in long_hourly.columns:
-                            continue
-                        hourly_series_by_location_id[loc_id] = {}
-                        long_hourly["_month"] = pd.to_datetime(long_hourly["datetime"], errors="coerce").dt.month
-                        summer = long_hourly[long_hourly["_month"].isin([6, 7, 8])]
-                        for sc in long_hourly["scenario"].dropna().unique().tolist():
-                            sc_str = str(sc).strip()
-                            if not sc_str:
-                                continue
-                            sub = summer[summer["scenario"] == sc]
-                            series = [
-                                {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
-                                for _, row in sub.iterrows()
-                                if pd.notna(row.get("DBT"))
-                            ]
-                            hourly_series_by_location_id[loc_id][sc_str] = series
-                        for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
-                            if alias_from in hourly_series_by_location_id[loc_id] and alias_to not in hourly_series_by_location_id[loc_id]:
-                                hourly_series_by_location_id[loc_id][alias_to] = hourly_series_by_location_id[loc_id][alias_from]
-                        loaded_count += 1
-                        if loaded_count >= MAX_HOURLY_STATIONS:
-                            break
-                    if loaded_count >= MAX_HOURLY_STATIONS:
-                        break
+                region_stem_to_loc = {}
+                if not idx.empty:
+                    for rec in idx[["region", "station_key", "location_id"]].fillna("").to_dict("records"):
+                        reg = str(rec.get("region") or "").strip()
+                        sk = str(rec.get("station_key") or "").strip()
+                        lid = str(rec.get("location_id") or "").strip()
+                        if reg and lid:
+                            if sk:
+                                region_stem_to_loc[(reg, sk)] = lid
+                            region_stem_to_loc[(reg, lid)] = lid
+                region_stem_to_loc_items = tuple(sorted(region_stem_to_loc.items()))
+                hourly_series_by_location_id = _build_hourly_series_by_location_id(
+                    DEFAULT_B_DATA_DIR,
+                    by_region,
+                    region_stem_to_loc_items,
+                    max_stations=MAX_HOURLY_STATIONS,
+                )
 
                 if not selected_location_id and hourly_series_by_location_id:
                     selected_location_id = next(iter(hourly_series_by_location_id))
@@ -1636,11 +1687,7 @@ with top_tabs[1]:
                                     if not sc_str:
                                         continue
                                     sub = summer[summer["scenario"] == sc]
-                                    series = [
-                                        {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
-                                        for _, row in sub.iterrows()
-                                        if pd.notna(row.get("DBT"))
-                                    ]
+                                    series = _series_from_sub(sub)
                                     hourly_series_by_location_id[selected_location_id][sc_str] = series
                                 for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
                                     if alias_from in hourly_series_by_location_id[selected_location_id] and alias_to not in hourly_series_by_location_id[selected_location_id]:
@@ -1672,11 +1719,7 @@ with top_tabs[1]:
                         for rp in rel_paths:
                             scenario = str(rp).split("__", 1)[-1] if "__" in str(rp) else str(rp)
                             sub = summer_reg[summer_reg["rel_path"] == rp]
-                            series = [
-                                {"t": row["datetime"].isoformat() if hasattr(row["datetime"], "isoformat") else str(row["datetime"]), "v": float(row["DBT"])}
-                                for _, row in sub.iterrows()
-                                if pd.notna(row.get("DBT"))
-                            ]
+                            series = _series_from_sub(sub)
                             if series:
                                 hourly_series_by_location_id[loc_id][scenario] = series
                         for alias_from, alias_to in [("rcp45_2050", "tmyx__rcp45_2050"), ("rcp85_2080", "tmyx__rcp85_2080")]:
@@ -1687,47 +1730,44 @@ with top_tabs[1]:
                                 selected_location_id = loc_id
                             break
 
-                # Uniform fonts for D3 dashboard (always on, Inter default; no UI)
-                font_theme = {
-                    "enabled": True,
-                    "font_family": '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                    "fs_title": 18,
-                    "fs_subtitle": 15,
-                    "fs_label": 10,
-                    "fs_small": 10,
-                    "fs_axis": 11,
-                }
-
-                html_v2 = h.f23d__d3_region_maps_html(
-                    baseline_variants=list(top_combined_abs.keys()),
-                    abs_points_by_variant=top_combined_abs,
-                    delta_points_by_variant={},
-                    metric_key=metric_key,
+                import hashlib as _hl
+                _abs_j = json.dumps(top_combined_abs)
+                _profiles_j = json.dumps(profiles_bundle_by_variant) if profiles_bundle_by_variant else "{}"
+                _future_j = json.dumps(top_future_abs_points) if top_future_abs_points else "{}"
+                _reg_j = json.dumps(region_options_data)
+                _unitr_j = json.dumps(unitr_points)
+                _hourly_j = json.dumps(hourly_series_by_location_id) if hourly_series_by_location_id else "{}"
+                html_v2 = _build_region_maps_html(
+                    baseline_variants_key=tuple(top_combined_abs.keys()),
                     compare_variant=compare_variant,
+                    metric_key=metric_key,
                     percentile=float(percentile),
-                    region_options=region_options_data,
-                    future_abs_points_by_variant=top_future_abs_points if top_future_abs_points else None,
-                    initial_region=None,
-                    click_callback_key="single_regions_location_click_v2",
-                    profiles_bundle_by_variant=profiles_bundle_by_variant if profiles_bundle_by_variant else None,
-                    unitr_points=unitr_points,
-                    font_theme=font_theme,
-                    hide_region_selector=False,
-                    layout_mode="columns",
-                    cti_on_top=True,
-                    hide_row2=True,
-                    side_text_html=side_text_html,
+                    ui_lang=st.session_state.get("ui_lang", "EN"),
+                    abs_fp=_hl.md5(_abs_j.encode()).hexdigest(),
+                    profiles_fp=_hl.md5(_profiles_j.encode()).hexdigest(),
+                    future_abs_fp=_hl.md5(_future_j.encode()).hexdigest(),
+                    region_options_fp=_hl.md5(_reg_j.encode()).hexdigest(),
+                    unitr_fp=_hl.md5(_unitr_j.encode()).hexdigest(),
+                    hourly_fp=_hl.md5(_hourly_j.encode()).hexdigest(),
+                    selected_location_id=selected_location_id,
                     dashboard_cols=V2_DASHBOARD_COLS,
                     maps_row_gap_px=V2_MAPS_ROW_GAP_PX,
                     maps_row3_gap_px=V2_MAPS_ROW3_GAP_PX,
                     thermo_separator_gap_px=D3_DIVIDER_MARGIN_TOP_PX,
                     divider_margin_bottom_px=D3_DIVIDER_MARGIN_BOTTOM_PX,
-                    ui_lang=st.session_state.get("ui_lang", "EN"),
-                    hourly_series_by_variant=None,
-                    initial_selected_location_id=selected_location_id,
-                    hourly_series_by_location_id=hourly_series_by_location_id if hourly_series_by_location_id else None,
+                    _abs_points_json=_abs_j,
+                    _profiles_json=_profiles_j,
+                    _future_abs_json=_future_j,
+                    _region_options_json=_reg_j,
+                    _unitr_points_json=_unitr_j,
+                    _hourly_json=_hourly_j,
+                    _geo_script=_GEO_SCRIPT,
                 )
                 components.html(html_v2, height=1150, scrolling=False)
+
+                # Lightweight debug panel to quickly diagnose missing metrics / bad data path in deployments
+                with st.expander("Debug: data sanity", expanded=False):
+                    st.json(h.debug_data_sanity(DEFAULT_DATA_DIR))
 
                 # Debug maps utility (underneath D3 dashboard, not in sidebar)
                 DEBUG_MAPS = st.checkbox("Debug maps", value=False, key="debug_maps_confronto_regione")
@@ -1784,6 +1824,8 @@ with top_tabs[1]:
 
     with scenario_tabs[3]:
         st.markdown(f"##### {label('current_weather_data_tmyx')}")
+        st.markdown(label("tmyx_tab_intro"))
+        st.markdown("")
         present_idx = idx[idx["variant"].isin(present_variants)].copy()
         present_idx["label"] = present_idx["location_name"].fillna(present_idx["station_key"].astype(str))
         present_idx["label"] = present_idx["label"] + " (" + present_idx["location_id"].astype(str) + ")"
@@ -2226,7 +2268,7 @@ with top_tabs[1]:
                 st.plotly_chart(fig_proj, width='stretch', key="ipcc_projections_scenarios_tab")
                 st.caption("Based on IPCC AR6. [View IPCC AR6 data](https://ipcc-browser.ipcc-data.org/)")
 
-with top_tabs[2]:
+def _run_debug_page():
     debug_tabs = st.tabs(["Code Performance", "Data Preview", "Data Structure", "Preparation Scripts"])
 
     with debug_tabs[0]:
@@ -2278,21 +2320,38 @@ with top_tabs[2]:
             st.warning(f"No parquet files found in `{DEFAULT_DATA_DIR}`. Run data preparation scripts first.")
         else:
             preview_n = 20
-            region_tab_names = [f"{region} ({len(files)})" for region, files in by_region]
-            data_preview_tabs = st.tabs(region_tab_names)
-            for tab, (region_code, region_files) in zip(data_preview_tabs, by_region):
-                with tab:
-                    for pa, _file_label in region_files:
-                        try:
-                            df_p = _read_parquet_robust(pa)
-                            if df_p is None or df_p.empty:
-                                st.caption(f"**{pa.name}** — empty")
-                                continue
-                            nrows, ncols = len(df_p), len(df_p.columns)
-                            st.markdown(f"**{pa.name}** — {nrows:,} rows, {ncols} columns")
-                            st.dataframe(df_p.head(preview_n), width="stretch", hide_index=True)
-                        except Exception as e:
-                            st.caption(f"**{pa.name}** — error: {e}")
+            region_labels = [region for region, _ in by_region]
+            region_files_map = {region: files for region, files in by_region}
+
+            col_sel, col_info = st.columns([2, 3])
+            with col_sel:
+                selected_region = st.selectbox(
+                    "Region",
+                    options=region_labels,
+                    format_func=lambda r: f"{r}  ({len(region_files_map[r])} files)",
+                    key="debug_preview_region",
+                )
+            region_files = region_files_map.get(selected_region, [])
+            with col_info:
+                st.caption(
+                    f"**{selected_region}** — {len(region_files)} parquet file(s). "
+                    f"Showing first {preview_n} rows of each."
+                )
+
+            if not region_files:
+                st.info("No files found for this region.")
+            else:
+                for pa, _file_label in region_files:
+                    try:
+                        df_p = _read_parquet_robust(pa)
+                        if df_p is None or df_p.empty:
+                            st.caption(f"**{pa.name}** — empty")
+                            continue
+                        nrows, ncols = len(df_p), len(df_p.columns)
+                        with st.expander(f"**{pa.name}** — {nrows:,} rows · {ncols} cols", expanded=False):
+                            st.dataframe(df_p.head(preview_n), use_container_width=True, hide_index=True)
+                    except Exception as e:
+                        st.caption(f"**{pa.name}** — error: {e}")
 
     with debug_tabs[2]:
         st.markdown("##### Data folder structure")
@@ -2354,3 +2413,15 @@ with top_tabs[2]:
         script_df = pd.DataFrame(script_rows)
         st.dataframe(script_df, width="stretch", hide_index=True)
         st.caption("Scripts in data/data_preparation_scripts/. Run in order per README. See repo README for full workflow.")
+
+
+_lang = st.session_state.get("ui_lang", "IT")
+pg = st.navigation(
+    [
+        st.Page("pages/page_welcome.py", title=label("welcome", _lang), icon=":material/home:", default=True),
+        st.Page(_run_scenarios_page, title=label("future_weather_scenarios", _lang), icon=":material/explore:"),
+        st.Page(_run_debug_page, title="Data & Code Debug", icon=":material/bug_report:"),
+    ],
+    position="top",
+)
+pg.run()

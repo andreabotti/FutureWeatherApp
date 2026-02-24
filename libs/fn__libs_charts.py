@@ -58,6 +58,54 @@ def _load_italy_regions_geojson():
     return None
 
 
+# ── Geo bundle: load from disk once, inline into every D3 iframe ──────────────
+@st.cache_resource(show_spinner=False)
+def _load_geo_bundle(geo_dir: str) -> dict:
+    """
+    Load the three Italy GeoJSON files from *geo_dir* (produced by 06E_precompute_geodata.py).
+    Falls back to network download if any file is missing.
+    Cached once per Streamlit process — survives every rerun.
+    Returns {"italy": {...}, "regions": {...}, "provinces": {...}}
+    """
+    import json as _json
+    import urllib.request as _req
+    from pathlib import Path as _Path
+
+    _FALLBACK = {
+        "italy":     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json",  # needs decode; handled below
+        "regions":   "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson",
+        "provinces": "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_provinces.geojson",
+    }
+    p = _Path(geo_dir)
+    bundle: dict = {}
+
+    def _read(path: _Path, url: str, key: str):
+        if path.exists():
+            with open(path, encoding="utf-8") as _f:
+                return _json.load(_f)
+        try:
+            with _req.urlopen(url, timeout=15) as _r:
+                return _json.loads(_r.read())
+        except Exception:
+            return None
+
+    bundle["italy"]     = _read(p / "italy_outline.geojson",  _FALLBACK["italy"],     "italy")
+    bundle["regions"]   = _read(p / "regions.geojson",         _FALLBACK["regions"],   "regions")
+    bundle["provinces"] = _read(p / "provinces.geojson",        _FALLBACK["provinces"], "provinces")
+    return bundle
+
+
+@st.cache_resource(show_spinner=False)
+def geo_inline_script(geo_dir: str) -> str:
+    """Return a <script> tag with the geo bundle inlined as window.__GEO__.
+    Pass this to any D3 dashboard function as geo_script=... to eliminate
+    all in-browser network fetches for geographic data."""
+    import json as _json
+    bundle = _load_geo_bundle(geo_dir)
+    blob = _json.dumps(bundle, separators=(",", ":"))
+    return f"<script>window.__GEO__={blob};</script>"
+
+
 def _add_italy_region_outlines_to_plotly(fig):
     regions_geojson = _load_italy_regions_geojson()
     if not regions_geojson or "features" not in regions_geojson:
@@ -317,6 +365,7 @@ def f204__d3_dashboard_html_abs(
     height: int = 640,
     scenario_variant: str,
     percentile: float = 99.0,
+    geo_script: str = "",
 ) -> str:
     """
     D3/JS dashboard for absolute scenario temperatures (single series).
@@ -385,6 +434,7 @@ def f204__d3_dashboard_html_abs(
   </div>
 </div>
 
+{geo_script}
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
@@ -422,12 +472,13 @@ def f204__d3_dashboard_html_abs(
 
   const overviewMap = d3.select("#overview_map");
 
-  const topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
-  const countries = topojson.feature(topo, topo.objects.countries);
-  const italy = {{
-    type: "FeatureCollection",
-    features: countries.features.filter(d => +d.id === 380)
-  }};
+  // Fast path: use inline geo bundle (zero network latency); fallback: network
+  let italy = window.__GEO__?.italy || null;
+  if (!italy) try {{
+    const _topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+    const _c = topojson.feature(_topo, _topo.objects.countries);
+    italy = {{ type: "FeatureCollection", features: _c.features.filter(d => +d.id === 380) }};
+  }} catch(e) {{}}
   const pad = 16;
   const projection = d3.geoMercator().fitExtent([[pad, pad], [mapW - pad, mapH - pad]], italy);
   const path = d3.geoPath(projection);
@@ -439,25 +490,20 @@ def f204__d3_dashboard_html_abs(
     .attr("stroke", "#333")
     .attr("stroke-width", 1);
 
-  // Region outlines (Italy) overlay
-  // Source: Openpolis geojson-italy (regions). If this fetch fails (offline/proxy), we simply skip.
-  try {{
-    const regionsUrl = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
-    const regions = await d3.json(regionsUrl);
-    if (regions && regions.features) {{
-      svg.append("g")
-        .attr("pointer-events", "none")
-        .selectAll("path.region")
-        .data(regions.features)
-        .join("path")
-          .attr("class", "region")
-          .attr("d", path)
-          .attr("fill", "none")
-          .attr("stroke", "rgba(40,40,40,0.65)")
-          .attr("stroke-width", 0.6);
-    }}
-  }} catch (e) {{
-    // ignore
+  // Region outlines overlay (fast path: inline; fallback: network)
+  let regions = window.__GEO__?.regions || null;
+  if (!regions) try {{ regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"); }} catch(e) {{}}
+  if (regions && regions.features) {{
+    svg.append("g")
+      .attr("pointer-events", "none")
+      .selectAll("path.region")
+      .data(regions.features)
+      .join("path")
+        .attr("class", "region")
+        .attr("d", path)
+        .attr("fill", "none")
+        .attr("stroke", "rgba(40,40,40,0.65)")
+        .attr("stroke-width", 0.6);
   }}
 
   // Scenario tab map colors: blue(0) -> red(40)
@@ -806,6 +852,7 @@ def f205__d3_dashboard_html(
     baseline_variant: str,
     compare_variant: str,
     percentile: float = 99.0,
+    geo_script: str = "",
 ) -> str:
     data_json = json.dumps(points, ensure_ascii=False)
     prof_json = json.dumps(profiles_bundle, ensure_ascii=False)
@@ -875,6 +922,7 @@ def f205__d3_dashboard_html(
   </div>
 </div>
 
+{geo_script}
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
@@ -917,20 +965,15 @@ def f205__d3_dashboard_html(
     .style("width", "100%")
     .style("height", "auto");
 
-  const topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
-  const countries = topojson.feature(topo, topo.objects.countries);
-  const italy = {{
-    type: "FeatureCollection",
-    features: countries.features.filter(d => +d.id === 380)
-  }};
-
-  const regionsUrl = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
-  let regions = null;
-  try {{
-    regions = await d3.json(regionsUrl);
-  }} catch (e) {{
-    // ignore
-  }}
+  // Fast path: use inline geo bundle; fallback: network
+  let italy = window.__GEO__?.italy || null;
+  if (!italy) try {{
+    const _topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+    const _c = topojson.feature(_topo, _topo.objects.countries);
+    italy = {{ type: "FeatureCollection", features: _c.features.filter(d => +d.id === 380) }};
+  }} catch(e) {{}}
+  let regions = window.__GEO__?.regions || null;
+  if (!regions) try {{ regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"); }} catch(e) {{}}
 
   const pad = 16;
   const projection = d3.geoMercator().fitExtent([[pad, pad], [mapW - pad, mapH - pad]], italy);
@@ -1370,6 +1413,7 @@ def f206__d3_region_dashboard_html(
     compare_variant: str,
     percentile: float = 99.0,
     region_options: List[Dict[str, Any]],
+    geo_script: str = "",
 ) -> str:
     data_json = json.dumps(points, ensure_ascii=False)
     prof_json = json.dumps(profiles_bundle, ensure_ascii=False)
@@ -1483,6 +1527,7 @@ def f206__d3_region_dashboard_html(
   </div>
 </div>
 
+{geo_script}
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
@@ -1533,19 +1578,15 @@ def f206__d3_region_dashboard_html(
   const mapOverview = d3.select("#map_overview");
   const mapRegion = d3.select("#map_region");
 
-  const topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
-  const countries = topojson.feature(topo, topo.objects.countries);
-  const italy = {{
-    type: "FeatureCollection",
-    features: countries.features.filter(d => +d.id === 380)
-  }};
-  const regionsUrl = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
-  let regions = null;
-  try {{
-    regions = await d3.json(regionsUrl);
-  }} catch (e) {{
-    // ignore
-  }}
+  // Fast path: use inline geo bundle; fallback: network
+  let italy = window.__GEO__?.italy || null;
+  if (!italy) try {{
+    const _topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+    const _c = topojson.feature(_topo, _topo.objects.countries);
+    italy = {{ type: "FeatureCollection", features: _c.features.filter(d => +d.id === 380) }};
+  }} catch(e) {{}}
+  let regions = window.__GEO__?.regions || null;
+  if (!regions) try {{ regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson"); }} catch(e) {{}}
 
   // Δ tab map colors: Viridis scale on |Δ|, clipped to 0..5°C
   const MINV = 0, MAXV = 5;
@@ -1889,7 +1930,7 @@ def f206__d3_region_dashboard_html(
         .join("circle")
           .attr("cx", d => projection([+d.longitude, +d.latitude])[0])
           .attr("cy", d => projection([+d.longitude, +d.latitude])[1])
-          .attr("r", 200)
+          .attr("r", 4.6)
           .attr("fill", d => {{
             const v = mapValueForLocation(d.location_id);
             if (!Number.isFinite(v)) return "#999";
@@ -1980,6 +2021,7 @@ def f207__d3_region_maps_html(
     hourly_series_by_location_id: Dict[str, Dict[str, List[Dict[str, Any]]]] | None = None,
     thermo_separator_gap_px: int | None = None,
     divider_margin_bottom_px: int | None = None,
+    geo_script: str = "",
 ) -> str:
     # --- D3 dashboard: font/size and layout (change here for quick tuning) ---
     _font_defaults = {
@@ -2573,6 +2615,7 @@ def f207__d3_region_maps_html(
 <div id="main_title" class="scenarios-subtitle" style="display: {('none' if hide_region_selector else 'block')}; margin: 8px 0 12px; font-weight: 600; font-size: var(--fs-subtitle);">{scenarios_title_str}</div>
 {layout_block}
 
+{geo_script}
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
@@ -2718,28 +2761,25 @@ def f207__d3_region_maps_html(
     }}
   }}
 
-  let topo = null;
-  let italy = null;
-  let regions = null;
-  let provinces = null;
-  try {{
-    topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
-    if (topo && topo.objects && topo.objects.countries) {{
-      const countries = topojson.feature(topo, topo.objects.countries);
-      italy = {{
-        type: "FeatureCollection",
-        features: countries.features.filter(d => +d.id === 380)
-      }};
+  // Fast path: use inline geo bundle (zero network latency); fallback: network
+  let italy    = window.__GEO__?.italy     || null;
+  let regions  = window.__GEO__?.regions   || null;
+  let provinces= window.__GEO__?.provinces || null;
+  if (!italy || !regions) try {{
+    if (!italy) {{
+      const _topo = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+      if (_topo?.objects?.countries) {{
+        const _c = topojson.feature(_topo, _topo.objects.countries);
+        italy = {{ type: "FeatureCollection", features: _c.features.filter(d => +d.id === 380) }};
+      }}
     }}
-    regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson");
+    if (!regions) regions = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson");
   }} catch (e) {{
-    console.warn("D3 map: geo fetch failed (e.g. in iframe), markers will use point-only projection.", e);
+    console.warn("D3 map: geo fetch failed, markers will use point-only projection.", e);
   }}
-  try {{
+  if (!provinces) try {{
     provinces = await d3.json("https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_provinces.geojson");
-  }} catch (e) {{
-    // ignore
-  }}
+  }} catch(e) {{}}
 
   const tempScale = d3.scaleSequential(t => d3.interpolateRdBu(1 - t)).domain([0, 40]);
   const deltaScale = d3.scaleSequential(t => d3.interpolateRdBu(1 - t)).domain([0, 5]);
